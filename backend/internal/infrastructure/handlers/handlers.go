@@ -161,7 +161,15 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to register: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	created, err := h.Service.Login(u.Username, u.Password)
+	if err != nil {
+		w.WriteHeader(http.StatusCreated)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(created)
 }
 
 func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {

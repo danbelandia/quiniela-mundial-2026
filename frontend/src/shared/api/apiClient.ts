@@ -9,11 +9,21 @@ async function readError(response: Response): Promise<string> {
   }
 }
 
+async function readJson(response: Response): Promise<any> {
+  const text = await response.text();
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
 export const apiClient = {
   get: async (endpoint: string) => {
     const response = await fetch(`${BASE_URL}${endpoint}`);
     if (!response.ok) throw new Error(await readError(response));
-    return response.json();
+    return readJson(response);
   },
   post: async (endpoint: string, data: any) => {
     const response = await fetch(`${BASE_URL}${endpoint}`, {
@@ -22,14 +32,14 @@ export const apiClient = {
       body: JSON.stringify(data),
     });
     if (!response.ok) throw new Error(await readError(response));
-    return response.json();
+    return readJson(response);
   },
   delete: async (endpoint: string) => {
     const response = await fetch(`${BASE_URL}${endpoint}`, {
       method: 'DELETE',
     });
     if (!response.ok) throw new Error(await readError(response));
-    return response.json();
+    return readJson(response);
   },
   rawFetch: async (endpoint: string, options: RequestInit = {}) => {
     return fetch(`${BASE_URL}${endpoint}`, {
