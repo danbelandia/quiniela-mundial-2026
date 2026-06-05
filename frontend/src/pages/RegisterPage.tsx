@@ -6,19 +6,24 @@ export function RegisterPage() {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleRegister = async () => {
+    if (loading) return;
+    if (!username || !email || !password) {
+      alert('Completá todos los campos');
+      return;
+    }
+    setLoading(true);
     try {
       await apiClient.post('/register', { username, email, password });
       navigate('/ranking');
     } catch (error: any) {
       const msg = error?.message || 'Error en el registro';
-      if (msg.includes('ya está en uso') || msg.includes('ya está registrado')) {
-        alert(msg);
-      } else {
-        alert('Error en el registro: ' + msg);
-      }
+      alert(msg);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -26,10 +31,35 @@ export function RegisterPage() {
     <div className="flex flex-col items-center justify-center min-h-[60vh]">
       <div className="p-6 max-w-sm w-full bg-white rounded shadow-sm border">
         <h2 className="text-xl font-bold mb-4">Registro</h2>
-        <input className="w-full border p-2 mb-2" placeholder="Usuario" value={username} onChange={e => setUsername(e.target.value)} />
-        <input className="w-full border p-2 mb-2" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} />
-        <input className="w-full border p-2 mb-4" placeholder="Password" type="password" value={password} onChange={e => setPassword(e.target.value)} />
-        <button className="w-full bg-tm-blue text-white p-2 rounded" onClick={handleRegister}>Registrarse</button>
+        <input
+          className="w-full border p-2 mb-2"
+          placeholder="Usuario"
+          value={username}
+          onChange={e => setUsername(e.target.value)}
+          disabled={loading}
+        />
+        <input
+          className="w-full border p-2 mb-2"
+          placeholder="Email"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+          disabled={loading}
+        />
+        <input
+          className="w-full border p-2 mb-4"
+          placeholder="Password"
+          type="password"
+          value={password}
+          onChange={e => setPassword(e.target.value)}
+          disabled={loading}
+        />
+        <button
+          className="w-full bg-tm-blue text-white p-2 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+          onClick={handleRegister}
+          disabled={loading}
+        >
+          {loading ? 'Registrando...' : 'Registrarse'}
+        </button>
       </div>
 
       <div className="max-w-sm w-full mt-6 text-center text-sm text-gray-700">
