@@ -18,7 +18,8 @@ export function RegisterPage() {
     setLoading(true);
     try {
       await apiClient.post('/register', { username, email, password });
-      navigate('/ranking');
+      alert('Registro correcto, ahora puedes iniciar sesión');
+      navigate('/login');
     } catch (error: any) {
       const msg = error?.message || 'Error en el registro';
       alert(msg);
