@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { apiClient } from '../shared/api/apiClient';
 
 export function RegisterPage() {
   const [username, setUsername] = useState('');
@@ -8,15 +9,11 @@ export function RegisterPage() {
   const navigate = useNavigate();
 
   const handleRegister = async () => {
-    const res = await fetch('http://localhost:8080/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, email, password })
-    });
-    if (res.ok) {
+    try {
+      await apiClient.post('/register', { username, email, password });
       navigate('/ranking');
-    } else {
-        alert("Error en el registro");
+    } catch {
+      alert('Error en el registro');
     }
   };
 

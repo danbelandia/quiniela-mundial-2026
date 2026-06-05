@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../shared/AuthContext';
+import { apiClient } from '../shared/api/apiClient';
 
 export function LoginPage() {
   const [username, setUsername] = useState('');
@@ -9,17 +10,11 @@ export function LoginPage() {
   const { login } = useAuth();
 
   const handleLogin = async () => {
-    const res = await fetch('http://localhost:8080/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password })
-    });
-
-    if (res.ok) {
-      const user = await res.json();
+    try {
+      const user = await apiClient.post('/login', { username, password });
       login(String(user.id), !!user.is_admin);
       navigate('/');
-    } else {
+    } catch {
       alert('Credenciales incorrectas');
     }
   };

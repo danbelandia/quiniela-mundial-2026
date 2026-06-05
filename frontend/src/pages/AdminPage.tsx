@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useMatches } from '../features/hooks';
+import { apiClient } from '../shared/api/apiClient';
 
 export function AdminPage() {
   const { matches, loading, refresh } = useMatches();
@@ -10,7 +11,7 @@ export function AdminPage() {
   const [currentGroup, setCurrentGroup] = useState('A');
 
   useEffect(() => {
-    fetch('http://localhost:8080/ranking').then(res => res.json()).then(setUsers);
+    apiClient.get('/ranking').then(setUsers);
   }, []);
 
   const groups = useMemo(
@@ -34,15 +35,9 @@ export function AdminPage() {
   const handleUpdate = async (matchId: number) => {
     const s = scores[matchId] || { home: 0, away: 0 };
     try {
-      const response = await fetch('http://localhost:8080/admin/matches/result', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: matchId, home_score: s.home, away_score: s.away })
-      });
-      if (response.ok) {
-        alert('Resultado oficial guardado');
-        refresh();
-      }
+      await apiClient.post('/admin/matches/result', { id: matchId, home_score: s.home, away_score: s.away });
+      alert('Resultado oficial guardado');
+      refresh();
     } catch (error) {
       alert('Error al guardar');
     }
@@ -50,8 +45,12 @@ export function AdminPage() {
 
   const handleDeleteUser = async (id: number) => {
     if(confirm('¿Eliminar usuario?')) {
-      await fetch(`http://localhost:8080/admin/users/${id}`, { method: 'DELETE' });
-      setUsers(users.filter(u => u.id !== id));
+      try {
+        await apiClient.delete(`/admin/users/${id}`);
+        setUsers(users.filter(u => u.id !== id));
+      } catch (error) {
+        alert('Error al eliminar usuario');
+      }
     }
   };
 
@@ -62,16 +61,10 @@ export function AdminPage() {
 
   const saveEdit = async (id: number) => {
     try {
-      const response = await fetch('http://localhost:8080/admin/users/update', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, ...editUserForm })
-      });
-      if (response.ok) {
-        alert('Usuario actualizado');
-        setUsers(prev => prev.map(usr => usr.id === id ? { ...usr, ...editUserForm } : usr));
-        setEditingUserId(null);
-      }
+      await apiClient.post('/admin/users/update', { id, ...editUserForm });
+      alert('Usuario actualizado');
+      setUsers(prev => prev.map(usr => usr.id === id ? { ...usr, ...editUserForm } : usr));
+      setEditingUserId(null);
     } catch (error) {
       alert('Error al actualizar usuario');
     }
@@ -176,18 +169,10 @@ export function AdminPage() {
                       } else {
                           setUsers(prev => prev.map(usr => usr.id === u.id ? { ...usr, is_admin: newIsAdmin } : usr));
                           try {
-                              const response = await fetch('http://localhost:8080/admin/users/update', {
-                                  method: 'POST',
-                                  headers: {'Content-Type': 'application/json'},
-                                  body: JSON.stringify({ ...u, is_admin: newIsAdmin })
-                              });
-                              if (!response.ok) {
-                                  setUsers(prev => prev.map(usr => usr.id === u.id ? { ...usr, is_admin: u.is_admin } : usr));
-                                  alert('Error al actualizar el rol de admin');
-                              }
+                              await apiClient.post('/admin/users/update', { ...u, is_admin: newIsAdmin });
                           } catch (error) {
                               setUsers(prev => prev.map(usr => usr.id === u.id ? { ...usr, is_admin: u.is_admin } : usr));
-                              alert('Error de red al actualizar admin');
+                              alert('Error al actualizar el rol de admin');
                           }
                       }
                   }} />

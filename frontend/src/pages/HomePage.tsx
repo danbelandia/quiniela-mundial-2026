@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useMatches, useSubmitPrediction } from '../features/hooks';
 import { useAuth } from '../shared/AuthContext';
+import { apiClient } from '../shared/api/apiClient';
 
 export function HomePage() {
   const { matches, loading, refresh } = useMatches();
@@ -12,19 +13,17 @@ export function HomePage() {
   const [savedScores, setSavedScores] = useState<{ [key: number]: { home: number; away: number } }>({});
 
   useEffect(() => {
-    fetch('http://localhost:8080/predictions')
-      .then(res => res.json())
-      .then(data => {
-        if (!data) return;
-        const userId = parseInt(localStorage.getItem('userId') || '1');
-        const map = data
-          .filter((p: any) => p.user_id === userId)
-          .reduce((acc: any, p: any) => {
-            acc[p.match_id] = { home: p.home_score, away: p.away_score };
-            return acc;
-          }, {});
-        setSavedScores(map);
-      });
+    apiClient.get('/predictions').then(data => {
+      if (!data) return;
+      const userId = parseInt(localStorage.getItem('userId') || '1');
+      const map = data
+        .filter((p: any) => p.user_id === userId)
+        .reduce((acc: any, p: any) => {
+          acc[p.match_id] = { home: p.home_score, away: p.away_score };
+          return acc;
+        }, {});
+      setSavedScores(map);
+    });
   }, []);
 
   const groups = useMemo(() => {
@@ -41,19 +40,12 @@ export function HomePage() {
     const userId = localStorage.getItem('userId') || '1';
 
     try {
-      const response = await fetch('http://localhost:8080/predictions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          match_id: matchId,
-          home_score: s.home,
-          away_score: s.away,
-          user_id: parseInt(userId)
-        })
+      await apiClient.post('/predictions', {
+        match_id: matchId,
+        home_score: s.home,
+        away_score: s.away,
+        user_id: parseInt(userId)
       });
-
-      if (!response.ok) throw new Error(`Error ${response.status}`);
-
       setSavedScores(prev => ({...prev, [matchId]: s}));
       setEditingId(null);
     } catch (error) {
@@ -64,15 +56,9 @@ export function HomePage() {
 
   const handleLockAll = async (locked: boolean) => {
     try {
-      const response = await fetch('http://localhost:8080/admin/matches/lock-all', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ is_locked: locked })
-      });
-      if (response.ok) {
-        alert('Todos los partidos han sido ' + (locked ? 'bloqueados' : 'desbloqueados'));
-        refresh();
-      }
+      await apiClient.post('/admin/matches/lock-all', { is_locked: locked });
+      alert('Todos los partidos han sido ' + (locked ? 'bloqueados' : 'desbloqueados'));
+      refresh();
     } catch (error) {
       alert('Error al actualizar');
     }

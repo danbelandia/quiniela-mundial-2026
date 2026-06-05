@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { apiClient } from '../shared/api/apiClient';
 
 const USERS_PER_PAGE = 15;
 
@@ -19,12 +20,10 @@ export function RankingPage() {
   const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
-    fetch('http://localhost:8080/ranking')
-      .then(res => res.json())
-      .then(data => {
-        const sorted = data.sort((a: any, b: any) => b.score - a.score);
-        setUsers(sorted);
-      });
+    apiClient.get('/ranking').then(data => {
+      const sorted = data.sort((a: any, b: any) => b.score - a.score);
+      setUsers(sorted);
+    });
   }, []);
 
   const totalPages = Math.max(1, Math.ceil(users.length / USERS_PER_PAGE));
