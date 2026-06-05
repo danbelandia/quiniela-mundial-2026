@@ -177,7 +177,8 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 	id, _ := strconv.Atoi(idStr)
 	if err := h.Service.DeleteUser(id); err != nil {
-		http.Error(w, "Failed to delete", http.StatusInternalServerError)
+		log.Printf("Delete user error: %v", err)
+		http.Error(w, "Failed to delete user: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusOK)

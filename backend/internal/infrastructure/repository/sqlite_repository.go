@@ -275,8 +275,19 @@ func (r *SQLiteRepository) GetAll() ([]domain.User, error) {
 }
 
 func (r *SQLiteRepository) Delete(id int) error {
-	_, err := r.DB.Exec("DELETE FROM users WHERE id = ?", id)
-	return err
+	tx, err := r.DB.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.Exec("DELETE FROM predictions WHERE user_id = ?", id); err != nil {
+		return err
+	}
+	if _, err := tx.Exec("DELETE FROM users WHERE id = ?", id); err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 func (r *SQLiteRepository) Update(u domain.User) error {
