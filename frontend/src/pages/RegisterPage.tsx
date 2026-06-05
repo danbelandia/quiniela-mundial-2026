@@ -12,8 +12,13 @@ export function RegisterPage() {
     try {
       await apiClient.post('/register', { username, email, password });
       navigate('/ranking');
-    } catch {
-      alert('Error en el registro');
+    } catch (error: any) {
+      const msg = error?.message || 'Error en el registro';
+      if (msg.includes('ya está en uso') || msg.includes('ya está registrado')) {
+        alert(msg);
+      } else {
+        alert('Error en el registro: ' + msg);
+      }
     }
   };
 

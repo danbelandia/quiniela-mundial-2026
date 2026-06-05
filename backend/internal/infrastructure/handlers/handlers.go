@@ -8,6 +8,7 @@ import (
 	"quiniela-backend/internal/core/domain"
 	"quiniela-backend/internal/core/ports"
 	"strconv"
+	"strings"
 )
 
 func SetCORS(w http.ResponseWriter) {
@@ -149,6 +150,14 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	if err := h.Service.Register(u); err != nil {
 		log.Printf("Registration error: %v", err)
+		if strings.Contains(err.Error(), "UNIQUE constraint failed: users.username") {
+			http.Error(w, "El nombre de usuario ya está en uso", http.StatusConflict)
+			return
+		}
+		if strings.Contains(err.Error(), "UNIQUE constraint failed: users.email") {
+			http.Error(w, "El email ya está registrado", http.StatusConflict)
+			return
+		}
 		http.Error(w, "Failed to register: "+err.Error(), http.StatusInternalServerError)
 		return
 	}

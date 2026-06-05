@@ -1,9 +1,18 @@
 const BASE_URL = (import.meta.env.VITE_API_URL as string | undefined) || 'http://localhost:8080';
 
+async function readError(response: Response): Promise<string> {
+  try {
+    const text = await response.text();
+    return text || `HTTP ${response.status}`;
+  } catch {
+    return `HTTP ${response.status}`;
+  }
+}
+
 export const apiClient = {
   get: async (endpoint: string) => {
     const response = await fetch(`${BASE_URL}${endpoint}`);
-    if (!response.ok) throw new Error('Network response was not ok');
+    if (!response.ok) throw new Error(await readError(response));
     return response.json();
   },
   post: async (endpoint: string, data: any) => {
@@ -12,14 +21,14 @@ export const apiClient = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
-    if (!response.ok) throw new Error('Network response was not ok');
+    if (!response.ok) throw new Error(await readError(response));
     return response.json();
   },
   delete: async (endpoint: string) => {
     const response = await fetch(`${BASE_URL}${endpoint}`, {
       method: 'DELETE',
     });
-    if (!response.ok) throw new Error('Network response was not ok');
+    if (!response.ok) throw new Error(await readError(response));
     return response.json();
   },
   rawFetch: async (endpoint: string, options: RequestInit = {}) => {
