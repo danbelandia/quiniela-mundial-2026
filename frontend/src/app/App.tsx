@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link, useNavigate } from 'react-router-dom';
 import { HomePage } from '../pages/HomePage';
 import { RankingPage } from '../pages/RankingPage';
 import { RegisterPage } from '../pages/RegisterPage';
@@ -10,10 +10,11 @@ import { AuthProvider, useAuth } from '../shared/AuthContext';
 
 function Navbar() {
   const { isLoggedIn, isAdmin, logout } = useAuth();
+  const navigate = useNavigate();
 
   const handleLogout = () => {
     logout();
-    window.location.href = '/login';
+    navigate('/login');
   };
 
   return (
