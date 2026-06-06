@@ -123,13 +123,37 @@ export function HomePage() {
                 <td className="p-3 text-center">
                   {editingId === m.id ? (
                     <div className="flex gap-2 items-center justify-center">
-                      <input type="number" min="0" className="w-12 border rounded p-1 text-center"
-                             defaultValue={scores[m.id]?.home || 0}
-                             onChange={e => setScores(prev => ({...prev, [m.id]: {...prev[m.id], home: parseInt(e.target.value) || 0}}))} />
+                      <input
+                        type="number"
+                        min="0"
+                        inputMode="numeric"
+                        className="w-12 border rounded p-1 text-center"
+                        value={scores[m.id]?.home ?? 0}
+                        onChange={e => {
+                          const raw = e.target.value;
+                          const parsed = raw === '' ? 0 : parseInt(raw, 10);
+                          setScores(prev => ({
+                            ...prev,
+                            [m.id]: { home: isNaN(parsed) ? 0 : parsed, away: prev[m.id]?.away ?? 0 }
+                          }));
+                        }}
+                      />
                       <span className="text-gray-400 font-bold">-</span>
-                      <input type="number" min="0" className="w-12 border rounded p-1 text-center"
-                             defaultValue={scores[m.id]?.away || 0}
-                             onChange={e => setScores(prev => ({...prev, [m.id]: {...prev[m.id], away: parseInt(e.target.value) || 0}}))} />
+                      <input
+                        type="number"
+                        min="0"
+                        inputMode="numeric"
+                        className="w-12 border rounded p-1 text-center"
+                        value={scores[m.id]?.away ?? 0}
+                        onChange={e => {
+                          const raw = e.target.value;
+                          const parsed = raw === '' ? 0 : parseInt(raw, 10);
+                          setScores(prev => ({
+                            ...prev,
+                            [m.id]: { home: prev[m.id]?.home ?? 0, away: isNaN(parsed) ? 0 : parsed }
+                          }));
+                        }}
+                      />
                     </div>
                   ) : (
                     <span className="font-bold text-tm-blue bg-tm-light-blue px-3 py-1 rounded inline-block min-w-[60px]">
