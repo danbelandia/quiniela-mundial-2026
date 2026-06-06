@@ -40,12 +40,11 @@ export function RankingPage() {
     <div className="bg-white p-6 rounded-lg shadow-sm">
       <h1 className="text-2xl font-bold border-b-2 border-tm-blue pb-2 mb-6">Ranking de Usuarios</h1>
       <div className="overflow-x-auto -mx-6 px-6">
-        <table className="w-full text-left min-w-[480px]">
+        <table className="w-full text-left min-w-[320px]">
           <thead>
             <tr className="bg-gray-100 text-tm-blue uppercase text-sm">
               <th className="p-2 md:p-3 w-12">Pos.</th>
               <th className="p-2 md:p-3">Usuario</th>
-              <th className="p-2 md:p-3">Email</th>
               <th className="p-2 md:p-3">Puntos</th>
             </tr>
           </thead>
@@ -58,7 +57,6 @@ export function RankingPage() {
                 <tr key={u.id} className={`border-b ${podiumBg}`}>
                   <td className="p-2 md:p-3 text-xl md:text-2xl whitespace-nowrap">{medal ? medal : pos}</td>
                   <td className="p-2 md:p-3 font-bold text-tm-blue whitespace-nowrap">{u.username}</td>
-                  <td className="p-2 md:p-3 truncate max-w-[160px]">{u.email}</td>
                   <td className="p-2 md:p-3 font-bold text-tm-blue whitespace-nowrap">{u.score}</td>
                 </tr>
               );
