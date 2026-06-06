@@ -59,27 +59,17 @@ func NewRankingService(predRepo ports.PredictionRepository) *RankingService {
 }
 
 func (s *RankingService) CalculatePoints(pred domain.Prediction, actualHome, actualAway int) int {
-	if pred.HomeScore == actualHome && pred.AwayScore == actualAway {
-		return 3
-	}
-	if pred.HomeScore == pred.AwayScore && actualHome == actualAway {
-		return 1
-	}
-	predHomeWin := pred.HomeScore > pred.AwayScore
-	actualHomeWin := actualHome > actualAway
-	if predHomeWin == actualHomeWin {
-		return 2
-	}
-	return 0
+	return pred.PointsEarned(actualHome, actualAway)
 }
 
 // UserService
 type UserService struct {
-	repo ports.UserRepository
+	repo     ports.UserRepository
+	predRepo ports.PredictionRepository
 }
 
-func NewUserService(repo ports.UserRepository) *UserService {
-	return &UserService{repo: repo}
+func NewUserService(repo ports.UserRepository, predRepo ports.PredictionRepository) *UserService {
+	return &UserService{repo: repo, predRepo: predRepo}
 }
 
 func (s *UserService) Login(identifier, password string) (*domain.User, error) {
@@ -107,6 +97,14 @@ func (s *UserService) Register(u domain.User) error {
 		return errors.New("missing required fields")
 	}
 	return s.repo.Create(u)
+}
+
+func (s *UserService) GetByID(id int) (*domain.User, error) {
+	return s.repo.GetByID(id)
+}
+
+func (s *UserService) GetUserPredictions(userID int) ([]ports.PredictionWithMatch, error) {
+	return s.predRepo.GetByUserIDWithMatch(userID)
 }
 
 func (s *UserService) DeleteUser(id int) error {

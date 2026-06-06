@@ -185,6 +185,38 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(created)
 }
 
+func (h *UserHandler) GetUserPredictions(w http.ResponseWriter, r *http.Request) {
+	SetCORS(w)
+	idStr := r.PathValue("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Invalid user id", http.StatusBadRequest)
+		return
+	}
+
+	user, err := h.Service.GetByID(id)
+	if err != nil {
+		http.Error(w, "User not found", http.StatusNotFound)
+		return
+	}
+
+	preds, err := h.Service.GetUserPredictions(id)
+	if err != nil {
+		log.Printf("Error fetching user predictions: %v", err)
+		http.Error(w, "Failed to fetch predictions", http.StatusInternalServerError)
+		return
+	}
+	if preds == nil {
+		preds = []ports.PredictionWithMatch{}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]any{
+		"user":        user,
+		"predictions": preds,
+	})
+}
+
 func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	SetCORS(w)
 	idStr := r.PathValue("id")

@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Link, useNavigate } from 'react-router-dom';
 import { HomePage } from '../pages/HomePage';
 import { RankingPage } from '../pages/RankingPage';
+import { UserPredictionsPage } from '../pages/UserPredictionsPage';
 import { RegisterPage } from '../pages/RegisterPage';
 import { AdminPage } from '../pages/AdminPage';
 import { LoginPage } from '../pages/LoginPage';
@@ -56,6 +57,7 @@ export function App() {
               <Route element={<ProtectedRoute />}>
                   <Route path="/" element={<HomePage />} />
                   <Route path="/ranking" element={<RankingPage />} />
+                  <Route path="/user/:id" element={<UserPredictionsPage />} />
 
                   <Route element={<AdminRoute />}>
                       <Route path="/admin" element={<AdminPage />} />

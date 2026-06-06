@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"log"
 	"quiniela-backend/internal/core/domain"
+	"quiniela-backend/internal/core/ports"
 
 	_ "github.com/tursodatabase/libsql-client-go/libsql"
 	_ "modernc.org/sqlite"
@@ -228,6 +229,63 @@ func (r *SQLiteRepository) GetAllPredictions() ([]domain.Prediction, error) {
 		preds = append(preds, p)
 	}
 	return preds, nil
+}
+
+func (r *SQLiteRepository) GetByUserIDWithMatch(userID int) ([]ports.PredictionWithMatch, error) {
+	rows, err := r.DB.Query(`
+		SELECT
+			m.id, m.group_name, m.home_team, m.home_flag, m.away_team, m.away_flag, m.match_date, m.status, m.home_score, m.away_score,
+			p.id, p.user_id, p.match_id, p.home_score, p.away_score
+		FROM matches m
+		LEFT JOIN predictions p ON p.match_id = m.id AND p.user_id = ?
+		ORDER BY m.group_name, m.match_date`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out []ports.PredictionWithMatch
+	for rows.Next() {
+		var (
+			matchID, realHome, realAway       int
+			group, homeTeam, homeFlag         string
+			awayTeam, awayFlag, matchDate, status string
+			predID, predUserID, predMatchID   sql.NullInt64
+			predHome, predAway                sql.NullInt64
+		)
+		if err := rows.Scan(
+			&matchID, &group, &homeTeam, &homeFlag, &awayTeam, &awayFlag, &matchDate, &status, &realHome, &realAway,
+			&predID, &predUserID, &predMatchID, &predHome, &predAway,
+		); err != nil {
+			return nil, err
+		}
+		pwm := ports.PredictionWithMatch{
+			GroupName: group,
+			HomeTeam:  homeTeam,
+			HomeFlag:  homeFlag,
+			AwayTeam:  awayTeam,
+			AwayFlag:  awayFlag,
+			MatchDate: matchDate,
+			Status:    status,
+			RealHome:  realHome,
+			RealAway:  realAway,
+		}
+		if predID.Valid {
+			pwm.HasPrediction = true
+			pwm.PredictionID = int(predID.Int64)
+			pwm.PredHome = int(predHome.Int64)
+			pwm.PredAway = int(predAway.Int64)
+			p := domain.Prediction{
+				HomeScore: pwm.PredHome,
+				AwayScore: pwm.PredAway,
+			}
+			if status == "finished" {
+				pwm.Points = p.PointsEarned(pwm.RealHome, pwm.RealAway)
+			}
+		}
+		out = append(out, pwm)
+	}
+	return out, nil
 }
 
 func (r *SQLiteRepository) Create(u domain.User) error {

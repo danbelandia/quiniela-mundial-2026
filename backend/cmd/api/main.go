@@ -22,7 +22,7 @@ func main() {
 	matchService := services.NewMatchService(repo)
 	predictionService := services.NewPredictionService(repo)
 	rankingService := services.NewRankingService(repo)
-	userService := services.NewUserService(repo)
+	userService := services.NewUserService(repo, repo)
 
 	matchHandler := &handlers.MatchHandler{Service: matchService}
 	predictionHandler := &handlers.PredictionHandler{Service: predictionService}
@@ -62,6 +62,9 @@ func main() {
 	mux.HandleFunc("OPTIONS /admin/users/{id}", handlers.HandleOptions)
 	mux.HandleFunc("POST /admin/users/update", userHandler.UpdateUser)
 	mux.HandleFunc("OPTIONS /admin/users/update", handlers.HandleOptions)
+
+	mux.HandleFunc("GET /users/{id}/predictions", userHandler.GetUserPredictions)
+	mux.HandleFunc("OPTIONS /users/{id}/predictions", handlers.HandleOptions)
 
 	log.Println("Server starting on :8080...")
 	if err := http.ListenAndServe(":8080", mux); err != nil {

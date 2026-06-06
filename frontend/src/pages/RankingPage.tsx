@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { apiClient } from '../shared/api/apiClient';
 
 const USERS_PER_PAGE = 15;
@@ -56,7 +57,11 @@ export function RankingPage() {
               return (
                 <tr key={u.id} className={`border-b ${podiumBg}`}>
                   <td className="p-2 md:p-3 text-xl md:text-2xl whitespace-nowrap">{medal ? medal : pos}</td>
-                  <td className="p-2 md:p-3 font-bold text-tm-blue whitespace-nowrap">{u.username}</td>
+                  <td className="p-2 md:p-3 font-bold text-tm-blue whitespace-nowrap">
+                    <Link to={`/user/${u.id}`} className="hover:underline cursor-pointer">
+                      {u.username}
+                    </Link>
+                  </td>
                   <td className="p-2 md:p-3 font-bold text-tm-blue whitespace-nowrap">{u.score}</td>
                 </tr>
               );
