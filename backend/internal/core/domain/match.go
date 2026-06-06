@@ -15,3 +15,10 @@ type Match struct {
 	AwayFlag  string    `json:"away_flag"`
 	IsLocked  bool      `json:"is_locked"`
 }
+
+func (m Match) IsEffectivelyLocked(now time.Time, window time.Duration) bool {
+	if m.IsLocked {
+		return true
+	}
+	return !now.Add(window).Before(m.Date)
+}
