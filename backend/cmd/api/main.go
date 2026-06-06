@@ -5,6 +5,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
+	"time"
 	"quiniela-backend/internal/application/services"
 	"quiniela-backend/internal/infrastructure/handlers"
 	"quiniela-backend/internal/infrastructure/repository"
@@ -12,19 +14,20 @@ import (
 
 func main() {
 	driverName, connStr := buildDBConfig()
+	lockWindow := buildLockWindow()
 
-	repo, err := repository.NewSQLiteRepository(driverName, connStr)
+	repo, err := repository.NewSQLiteRepository(driverName, connStr, lockWindow)
 	if err != nil {
 		log.Fatalf("Could not connect to database: %v", err)
 	}
 	defer repo.DB.Close()
 
 	matchService := services.NewMatchService(repo)
-	predictionService := services.NewPredictionService(repo)
+	predictionService := services.NewPredictionService(repo, repo, lockWindow)
 	rankingService := services.NewRankingService(repo)
 	userService := services.NewUserService(repo, repo)
 	standingsService := services.NewStandingsService(repo)
-	qualifierService := services.NewQualifierPredictionService(repo, repo)
+	qualifierService := services.NewQualifierPredictionService(repo, repo, lockWindow)
 
 	matchHandler := &handlers.MatchHandler{Service: matchService}
 	predictionHandler := &handlers.PredictionHandler{Service: predictionService}
@@ -105,4 +108,19 @@ func buildDBConfig() (driverName, connStr string) {
 
 	log.Println("TURSO_DATABASE_URL no definida, usando SQLite local (quiniela.db)")
 	return "sqlite", "quiniela.db"
+}
+
+func buildLockWindow() time.Duration {
+	raw := os.Getenv("LOCK_WINDOW_HOURS")
+	if raw == "" {
+		return 3 * time.Hour
+	}
+	hours, err := strconv.ParseFloat(raw, 64)
+	if err != nil || hours <= 0 {
+		log.Printf("warn: invalid LOCK_WINDOW_HOURS=%q, using default 3h", raw)
+		return 3 * time.Hour
+	}
+	window := time.Duration(hours * float64(time.Hour))
+	log.Printf("lock window configured: %s (%.4f hours)", window, hours)
+	return window
 }
