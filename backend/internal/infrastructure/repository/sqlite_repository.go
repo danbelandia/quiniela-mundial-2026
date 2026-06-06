@@ -3,6 +3,7 @@ package repository
 import (
 	"database/sql"
 	"log"
+	"time"
 	"quiniela-backend/internal/core/domain"
 	"quiniela-backend/internal/core/ports"
 
@@ -146,10 +147,12 @@ func (r *SQLiteRepository) GetAllMatches() ([]domain.Match, error) {
 	var matches []domain.Match
 	for rows.Next() {
 		var m domain.Match
-		err := rows.Scan(&m.ID, &m.HomeTeam, &m.AwayTeam, &m.HomeScore, &m.AwayScore, &m.Date, &m.Status, &m.Group, &m.IsLocked, &m.HomeFlag, &m.AwayFlag)
+		var matchDateStr string
+		err := rows.Scan(&m.ID, &m.HomeTeam, &m.AwayTeam, &m.HomeScore, &m.AwayScore, &matchDateStr, &m.Status, &m.Group, &m.IsLocked, &m.HomeFlag, &m.AwayFlag)
 		if err != nil {
 			return nil, err
 		}
+		m.Date = parseMatchDate(matchDateStr)
 		matches = append(matches, m)
 	}
 	return matches, nil
@@ -157,11 +160,13 @@ func (r *SQLiteRepository) GetAllMatches() ([]domain.Match, error) {
 
 func (r *SQLiteRepository) GetMatchByID(id int) (*domain.Match, error) {
 	var m domain.Match
+	var matchDateStr string
 	err := r.DB.QueryRow("SELECT id, home_team, away_team, home_score, away_score, match_date, status, group_name, is_locked, home_flag, away_flag FROM matches WHERE id = ?", id).
-		Scan(&m.ID, &m.HomeTeam, &m.AwayTeam, &m.HomeScore, &m.AwayScore, &m.Date, &m.Status, &m.Group, &m.IsLocked, &m.HomeFlag, &m.AwayFlag)
+		Scan(&m.ID, &m.HomeTeam, &m.AwayTeam, &m.HomeScore, &m.AwayScore, &matchDateStr, &m.Status, &m.Group, &m.IsLocked, &m.HomeFlag, &m.AwayFlag)
 	if err != nil {
 		return nil, err
 	}
+	m.Date = parseMatchDate(matchDateStr)
 	return &m, nil
 }
 
@@ -363,4 +368,25 @@ func (r *SQLiteRepository) Delete(id int) error {
 func (r *SQLiteRepository) Update(u domain.User) error {
 	_, err := r.DB.Exec("UPDATE users SET username = ?, email = ?, is_admin = ? WHERE id = ?", u.Username, u.Email, u.IsAdmin, u.ID)
 	return err
+}
+
+func parseMatchDate(s string) time.Time {
+	layouts := []string{
+		time.RFC3339Nano,
+		time.RFC3339,
+		"2006-01-02T15:04:05Z",
+		"2006-01-02 15:04:05.999999-07:00",
+		"2006-01-02 15:04:05-07:00",
+		"2006-01-02 15:04:05.999999+00:00",
+		"2006-01-02 15:04:05+00:00",
+		"2006-01-02 15:04:05.999999",
+		"2006-01-02 15:04:05",
+	}
+	for _, layout := range layouts {
+		if t, err := time.Parse(layout, s); err == nil {
+			return t
+		}
+	}
+	log.Printf("warn: could not parse match_date: %q", s)
+	return time.Time{}
 }
