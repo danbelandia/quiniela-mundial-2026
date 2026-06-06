@@ -37,12 +37,12 @@ type PredictionWithMatch struct {
 	MatchDate  string `json:"match_date"`
 	Status     string `json:"status"`
 	RealHome   int    `json:"home_score_real"`
-	RealAway   int    `json:"home_score_real"`
+	RealAway   int    `json:"away_score_real"`
 	Points     int    `json:"points"`
 	HasPrediction bool   `json:"has_prediction"`
 	PredictionID   int    `json:"prediction_id,omitempty"`
 	PredHome       int    `json:"home_score_pred"`
-	PredAway       int    `json:"home_score_pred"`
+	PredAway       int    `json:"away_score_pred"`
 }
 
 type QualifierPredictionRepository interface {
