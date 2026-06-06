@@ -104,55 +104,61 @@ export function HomePage() {
         </div>
       )}
       
-      <table className="w-full text-left">
-        <thead>
-          <tr className="bg-gray-100 text-tm-blue uppercase text-xs tracking-wider">
-            <th className="p-3">Partido</th>
-            <th className="p-3">Pronóstico</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredMatches.map((m: any) => (
-            <tr key={m.id} className="border-b hover:bg-tm-light-blue transition-colors">
-              <td className="p-3 font-medium text-gray-800">
-                {m.home_flag} {m.home_team} vs {m.away_team} {m.away_flag}
-              </td>
-              <td className="p-3">
-                {editingId === m.id ? (
-                  <div className="flex gap-2 items-center">
-                    <input type="number" min="0" className="w-12 border rounded p-1 text-center" 
-                           defaultValue={scores[m.id]?.home || 0}
-                           onChange={e => setScores(prev => ({...prev, [m.id]: {...prev[m.id], home: parseInt(e.target.value) || 0}}))} />
-                    <span className="text-gray-400">-</span>
-                    <input type="number" min="0" className="w-12 border rounded p-1 text-center" 
-                           defaultValue={scores[m.id]?.away || 0}
-                           onChange={e => setScores(prev => ({...prev, [m.id]: {...prev[m.id], away: parseInt(e.target.value) || 0}}))} />
-                    <button onClick={() => handleSave(m.id)} className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 ml-2">Guardar</button>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-4">
-                    {savedScores[m.id] ? (
-                      <span className="font-bold text-tm-blue bg-tm-light-blue px-3 py-1 rounded">
-                        {savedScores[m.id].home} - {savedScores[m.id].away}
-                      </span>
-                    ) : null}
-                    {m.is_locked ? (
-                      <span className="text-red-500 font-bold">Bloqueado</span>
-                    ) : (
-                      <button 
-                        onClick={() => setEditingId(m.id)}
-                        className="text-tm-blue hover:text-blue-900 font-semibold underline text-sm"
-                      >
-                        {savedScores[m.id] ? 'Editar' : 'Pronosticar'}
-                      </button>
-                    )}
-                  </div>
-                )}
-              </td>
+      <div className="overflow-x-auto -mx-6 px-6">
+        <table className="w-full text-left min-w-[520px]">
+          <thead>
+            <tr className="bg-gray-100 text-tm-blue uppercase text-xs tracking-wider">
+              <th className="p-3">Local</th>
+              <th className="p-3 text-center">Resultado</th>
+              <th className="p-3">Visitante</th>
+              <th className="p-3 text-right">Acción</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {filteredMatches.map((m: any) => (
+              <tr key={m.id} className="border-b hover:bg-tm-light-blue transition-colors">
+                <td className="p-3 font-medium text-gray-800 whitespace-nowrap text-right">
+                  {m.home_team} <span className="text-xl ml-2">{m.home_flag}</span>
+                </td>
+                <td className="p-3 text-center">
+                  {editingId === m.id ? (
+                    <div className="flex gap-2 items-center justify-center">
+                      <input type="number" min="0" className="w-12 border rounded p-1 text-center"
+                             defaultValue={scores[m.id]?.home || 0}
+                             onChange={e => setScores(prev => ({...prev, [m.id]: {...prev[m.id], home: parseInt(e.target.value) || 0}}))} />
+                      <span className="text-gray-400 font-bold">-</span>
+                      <input type="number" min="0" className="w-12 border rounded p-1 text-center"
+                             defaultValue={scores[m.id]?.away || 0}
+                             onChange={e => setScores(prev => ({...prev, [m.id]: {...prev[m.id], away: parseInt(e.target.value) || 0}}))} />
+                    </div>
+                  ) : (
+                    <span className="font-bold text-tm-blue bg-tm-light-blue px-3 py-1 rounded inline-block min-w-[60px]">
+                      {savedScores[m.id] ? `${savedScores[m.id].home} - ${savedScores[m.id].away}` : '-'}
+                    </span>
+                  )}
+                </td>
+                <td className="p-3 font-medium text-gray-800 whitespace-nowrap">
+                  <span className="text-xl mr-2">{m.away_flag}</span> {m.away_team}
+                </td>
+                <td className="p-3 text-right whitespace-nowrap">
+                  {editingId === m.id ? (
+                    <button onClick={() => handleSave(m.id)} className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700">Guardar</button>
+                  ) : m.is_locked ? (
+                    <span className="text-red-500 font-bold">Bloqueado</span>
+                  ) : (
+                    <button
+                      onClick={() => setEditingId(m.id)}
+                      className="text-tm-blue hover:text-blue-900 font-semibold underline text-sm"
+                    >
+                      {savedScores[m.id] ? 'Editar' : 'Pronosticar'}
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
