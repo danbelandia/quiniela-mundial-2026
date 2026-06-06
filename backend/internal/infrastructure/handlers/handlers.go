@@ -305,3 +305,17 @@ func (h *AdminHandler) ToggleLockAll(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusOK)
 }
+
+type StandingsHandler struct {
+	Service *services.StandingsService
+}
+
+func (h *StandingsHandler) GetAll(w http.ResponseWriter, r *http.Request) {
+	SetCORS(w)
+	standings, err := h.Service.CalculateAll()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	json.NewEncoder(w).Encode(standings)
+}

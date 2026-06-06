@@ -118,3 +118,20 @@ func (s *UserService) UpdateUser(u domain.User) error {
 func (s *UserService) GetAllUsers() ([]domain.User, error) {
 	return s.repo.GetAll()
 }
+
+// StandingsService
+type StandingsService struct {
+	matchRepo ports.MatchRepository
+}
+
+func NewStandingsService(matchRepo ports.MatchRepository) *StandingsService {
+	return &StandingsService{matchRepo: matchRepo}
+}
+
+func (s *StandingsService) CalculateAll() ([]domain.GroupStanding, error) {
+	matches, err := s.matchRepo.GetAllMatches()
+	if err != nil {
+		return nil, err
+	}
+	return domain.CalculateStandings(matches), nil
+}

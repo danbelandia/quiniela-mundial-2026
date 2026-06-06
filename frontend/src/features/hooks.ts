@@ -46,3 +46,31 @@ export function useRanking() {
 
   return { ranking };
 }
+
+export function useStandings() {
+  const [standings, setStandings] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const lastFetchedRef = { current: 0 };
+
+  const fetchStandings = () => {
+    lastFetchedRef.current = Date.now();
+    apiClient.get('/standings').then(data => {
+      setStandings(data);
+      setLoading(false);
+    });
+  };
+
+  useEffect(() => {
+    fetchStandings();
+
+    const onFocus = () => {
+      if (Date.now() - lastFetchedRef.current > 10000) {
+        fetchStandings();
+      }
+    };
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, []);
+
+  return { standings, loading, refresh: fetchStandings };
+}

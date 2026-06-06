@@ -1,11 +1,13 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useMatches, useSubmitPrediction } from '../features/hooks';
+import { useMatches, useSubmitPrediction, useStandings } from '../features/hooks';
 import { useAuth } from '../shared/AuthContext';
 import { apiClient } from '../shared/api/apiClient';
+import { GroupStandings } from '../components/GroupStandings';
 
 export function HomePage() {
   const { matches, loading, refresh } = useMatches();
   const { submit } = useSubmitPrediction();
+  const { standings } = useStandings();
   const { isAdmin } = useAuth();
   const [currentGroup, setCurrentGroup] = useState('A');
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -183,6 +185,8 @@ export function HomePage() {
           </tbody>
         </table>
       </div>
+
+      <GroupStandings groupName={currentGroup} standings={standings} />
     </div>
   );
 }
