@@ -36,7 +36,7 @@ func (r *SQLiteRepository) Migrate() error {
 	CREATE TABLE IF NOT EXISTS users (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		username TEXT NOT NULL UNIQUE,
-		email TEXT NOT NULL,
+		email TEXT NOT NULL UNIQUE,
 		password TEXT NOT NULL,
 		is_admin BOOLEAN DEFAULT 0
 	);
@@ -62,7 +62,8 @@ func (r *SQLiteRepository) Migrate() error {
 		UNIQUE(user_id, match_id),
 		FOREIGN KEY(user_id) REFERENCES users(id),
 		FOREIGN KEY(match_id) REFERENCES matches(id)
-	);`
+	);
+	CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email);`
 	_, err := r.DB.Exec(query)
 	return err
 }
@@ -248,6 +249,16 @@ func (r *SQLiteRepository) GetByID(id int) (*domain.User, error) {
 func (r *SQLiteRepository) GetByUsername(username string) (*domain.User, error) {
 	var u domain.User
 	err := r.DB.QueryRow("SELECT id, username, email, password, is_admin FROM users WHERE username = ?", username).
+		Scan(&u.ID, &u.Username, &u.Email, &u.Password, &u.IsAdmin)
+	if err != nil {
+		return nil, err
+	}
+	return &u, nil
+}
+
+func (r *SQLiteRepository) GetByEmail(email string) (*domain.User, error) {
+	var u domain.User
+	err := r.DB.QueryRow("SELECT id, username, email, password, is_admin FROM users WHERE email = ?", email).
 		Scan(&u.ID, &u.Username, &u.Email, &u.Password, &u.IsAdmin)
 	if err != nil {
 		return nil, err

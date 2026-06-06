@@ -1,0 +1,48 @@
+project: quiniela-mundial-2026
+stack:
+  backend:
+    language: go
+    module: backend
+    framework: standard library (net/http) + chi-style routing via http.ServeMux
+    db: sqlite (local) / libsql (Turso cloud)
+  frontend:
+    language: typescript
+    framework: react 19 + vite 8
+    styling: tailwindcss 4
+    router: react-router-dom 7
+architecture: hexagonal (ports / application services / infrastructure)
+persistence: openspec
+strict_tdd: false
+testing:
+  backend:
+    runner: none
+    note: no _test.go files in backend/ yet
+  frontend:
+    runner: none
+    note: no test framework installed yet (no vitest, jest, etc.)
+rules:
+  proposal:
+    max_words: 450
+    required_sections:
+      - Intent
+      - Scope
+      - Capabilities
+      - Approach
+      - Affected Areas
+      - Risks
+      - Rollback Plan
+      - Success Criteria
+  commit:
+    style: conventional-commits
+    no_ai_attribution: true
+  push:
+    require_user_confirmation: true
+conventions:
+  commits: conventional-commits (feat:, fix:, chore:, refactor:, etc.)
+  response_language: spanish-rioplatense
+  api:
+    base_url_env: VITE_API_URL (frontend)
+    db_url_env:
+      - TURSO_DATABASE_URL
+      - TURSO_AUTH_TOKEN
+    error_format: "message string in body, propagates to client"

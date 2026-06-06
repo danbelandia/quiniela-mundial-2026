@@ -125,6 +125,7 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 	SetCORS(w)
 	var creds struct {
 		Username string `json:"username"`
+		Email    string `json:"email"`
 		Password string `json:"password"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&creds); err != nil {
@@ -132,7 +133,19 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.Service.Login(creds.Username, creds.Password)
+	hasUser := creds.Username != ""
+	hasEmail := creds.Email != ""
+	if hasUser == hasEmail {
+		http.Error(w, "Provide exactly one of: username or email", http.StatusBadRequest)
+		return
+	}
+
+	identifier := creds.Username
+	if hasEmail {
+		identifier = creds.Email
+	}
+
+	user, err := h.Service.Login(identifier, creds.Password)
 	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return

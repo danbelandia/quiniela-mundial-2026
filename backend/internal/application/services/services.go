@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"strings"
 	"quiniela-backend/internal/core/domain"
 	"quiniela-backend/internal/core/ports"
 )
@@ -81,8 +82,17 @@ func NewUserService(repo ports.UserRepository) *UserService {
 	return &UserService{repo: repo}
 }
 
-func (s *UserService) Login(username, password string) (*domain.User, error) {
-	u, err := s.repo.GetByUsername(username)
+func (s *UserService) Login(identifier, password string) (*domain.User, error) {
+	if identifier == "" {
+		return nil, errors.New("identifier is required")
+	}
+	var u *domain.User
+	var err error
+	if strings.Contains(identifier, "@") {
+		u, err = s.repo.GetByEmail(identifier)
+	} else {
+		u, err = s.repo.GetByUsername(identifier)
+	}
 	if err != nil {
 		return nil, err
 	}
