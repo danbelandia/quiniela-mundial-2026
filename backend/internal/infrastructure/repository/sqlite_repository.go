@@ -12,10 +12,12 @@ import (
 )
 
 type SQLiteRepository struct {
-	DB *sql.DB
+	DB         *sql.DB
+	lockWindow time.Duration
+	clock      func() time.Time
 }
 
-func NewSQLiteRepository(driverName, connStr string) (*SQLiteRepository, error) {
+func NewSQLiteRepository(driverName, connStr string, lockWindow time.Duration) (*SQLiteRepository, error) {
 	db, err := sql.Open(driverName, connStr)
 	if err != nil {
 		return nil, err
@@ -23,7 +25,7 @@ func NewSQLiteRepository(driverName, connStr string) (*SQLiteRepository, error) 
 	if err := db.Ping(); err != nil {
 		return nil, err
 	}
-	repo := &SQLiteRepository{DB: db}
+	repo := &SQLiteRepository{DB: db, lockWindow: lockWindow, clock: time.Now}
 	if err := repo.Migrate(); err != nil {
 		return nil, err
 	}
@@ -31,6 +33,10 @@ func NewSQLiteRepository(driverName, connStr string) (*SQLiteRepository, error) 
 		return nil, err
 	}
 	return repo, nil
+}
+
+func (r *SQLiteRepository) LockWindow() time.Duration {
+	return r.lockWindow
 }
 
 func (r *SQLiteRepository) Migrate() error {
@@ -163,6 +169,7 @@ func (r *SQLiteRepository) GetAllMatches() ([]domain.Match, error) {
 			return nil, err
 		}
 		m.Date = parseMatchDate(matchDateStr)
+		m.IsLocked = m.IsEffectivelyLocked(r.clock().UTC(), r.lockWindow)
 		matches = append(matches, m)
 	}
 	return matches, nil
@@ -177,6 +184,7 @@ func (r *SQLiteRepository) GetMatchByID(id int) (*domain.Match, error) {
 		return nil, err
 	}
 	m.Date = parseMatchDate(matchDateStr)
+	m.IsLocked = m.IsEffectivelyLocked(r.clock().UTC(), r.lockWindow)
 	return &m, nil
 }
 
