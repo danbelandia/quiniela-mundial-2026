@@ -110,6 +110,7 @@ export function HomePage() {
         <table className="w-full text-left min-w-[520px]">
           <thead>
             <tr className="bg-gray-100 text-tm-blue uppercase text-xs tracking-wider">
+              <th className="p-3">Fecha</th>
               <th className="p-3">Local</th>
               <th className="p-3 text-center">Resultado</th>
               <th className="p-3">Visitante</th>
@@ -117,71 +118,79 @@ export function HomePage() {
             </tr>
           </thead>
           <tbody>
-            {filteredMatches.map((m: any) => (
-              <tr key={m.id} className="border-b hover:bg-tm-light-blue transition-colors">
-                <td className="p-3 font-medium text-gray-800 whitespace-nowrap text-right">
-                  {m.home_team} <span className="text-xl ml-2">{m.home_flag}</span>
-                </td>
-                <td className="p-3 text-center">
-                  {editingId === m.id ? (
-                    <div className="flex gap-2 items-center justify-center">
-                      <input
-                        type="number"
-                        min="0"
-                        inputMode="numeric"
-                        className="w-12 border rounded p-1 text-center"
-                        value={scores[m.id]?.home ?? 0}
-                        onChange={e => {
-                          const raw = e.target.value;
-                          const parsed = raw === '' ? 0 : parseInt(raw, 10);
-                          setScores(prev => ({
-                            ...prev,
-                            [m.id]: { home: isNaN(parsed) ? 0 : parsed, away: prev[m.id]?.away ?? 0 }
-                          }));
-                        }}
-                      />
-                      <span className="text-gray-400 font-bold">-</span>
-                      <input
-                        type="number"
-                        min="0"
-                        inputMode="numeric"
-                        className="w-12 border rounded p-1 text-center"
-                        value={scores[m.id]?.away ?? 0}
-                        onChange={e => {
-                          const raw = e.target.value;
-                          const parsed = raw === '' ? 0 : parseInt(raw, 10);
-                          setScores(prev => ({
-                            ...prev,
-                            [m.id]: { home: prev[m.id]?.home ?? 0, away: isNaN(parsed) ? 0 : parsed }
-                          }));
-                        }}
-                      />
-                    </div>
-                  ) : (
-                    <span className="font-bold text-tm-blue bg-tm-light-blue px-3 py-1 rounded inline-block min-w-[60px]">
-                      {savedScores[m.id] ? `${savedScores[m.id].home} - ${savedScores[m.id].away}` : '-'}
-                    </span>
-                  )}
-                </td>
-                <td className="p-3 font-medium text-gray-800 whitespace-nowrap">
-                  <span className="text-xl mr-2">{m.away_flag}</span> {m.away_team}
-                </td>
-                <td className="p-3 text-right whitespace-nowrap">
-                  {editingId === m.id ? (
-                    <button onClick={() => handleSave(m.id)} className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700">Guardar</button>
-                  ) : m.is_locked ? (
-                    <span className="text-red-500 font-bold">Bloqueado</span>
-                  ) : (
-                    <button
-                      onClick={() => setEditingId(m.id)}
-                      className="text-tm-blue hover:text-blue-900 font-semibold underline text-sm"
-                    >
-                      {savedScores[m.id] ? 'Editar' : 'Pronosticar'}
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
+            {filteredMatches.map((m: any) => {
+              const d = new Date(m.date);
+              const datePart = d.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', timeZone: 'America/Santiago' });
+              const timePart = d.toLocaleTimeString('es-CL', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Santiago' });
+              return (
+                <tr key={m.id} className="border-b hover:bg-tm-light-blue transition-colors">
+                  <td className="p-3 text-sm text-gray-600 whitespace-nowrap">
+                    {datePart} - {timePart}
+                  </td>
+                  <td className="p-3 font-medium text-gray-800 whitespace-nowrap text-right">
+                    {m.home_team} <span className="text-xl ml-2">{m.home_flag}</span>
+                  </td>
+                  <td className="p-3 text-center">
+                    {editingId === m.id ? (
+                      <div className="flex gap-2 items-center justify-center">
+                        <input
+                          type="number"
+                          min="0"
+                          inputMode="numeric"
+                          className="w-12 border rounded p-1 text-center"
+                          value={scores[m.id]?.home ?? 0}
+                          onChange={e => {
+                            const raw = e.target.value;
+                            const parsed = raw === '' ? 0 : parseInt(raw, 10);
+                            setScores(prev => ({
+                              ...prev,
+                              [m.id]: { home: isNaN(parsed) ? 0 : parsed, away: prev[m.id]?.away ?? 0 }
+                            }));
+                          }}
+                        />
+                        <span className="text-gray-400 font-bold">-</span>
+                        <input
+                          type="number"
+                          min="0"
+                          inputMode="numeric"
+                          className="w-12 border rounded p-1 text-center"
+                          value={scores[m.id]?.away ?? 0}
+                          onChange={e => {
+                            const raw = e.target.value;
+                            const parsed = raw === '' ? 0 : parseInt(raw, 10);
+                            setScores(prev => ({
+                              ...prev,
+                              [m.id]: { home: prev[m.id]?.home ?? 0, away: isNaN(parsed) ? 0 : parsed }
+                            }));
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <span className="font-bold text-tm-blue bg-tm-light-blue px-3 py-1 rounded inline-block min-w-[60px]">
+                        {savedScores[m.id] ? `${savedScores[m.id].home} - ${savedScores[m.id].away}` : '-'}
+                      </span>
+                    )}
+                  </td>
+                  <td className="p-3 font-medium text-gray-800 whitespace-nowrap">
+                    <span className="text-xl mr-2">{m.away_flag}</span> {m.away_team}
+                  </td>
+                  <td className="p-3 text-right whitespace-nowrap">
+                    {editingId === m.id ? (
+                      <button onClick={() => handleSave(m.id)} className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700">Guardar</button>
+                    ) : m.is_locked ? (
+                      <span className="text-red-500 font-bold">Bloqueado</span>
+                    ) : (
+                      <button
+                        onClick={() => setEditingId(m.id)}
+                        className="text-tm-blue hover:text-blue-900 font-semibold underline text-sm"
+                      >
+                        {savedScores[m.id] ? 'Editar' : 'Pronosticar'}
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

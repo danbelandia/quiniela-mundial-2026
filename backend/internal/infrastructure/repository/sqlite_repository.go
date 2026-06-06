@@ -93,7 +93,7 @@ func (r *SQLiteRepository) Seed() error {
 	flags := map[string]string{
 		"México": "🇲🇽", "Sudáfrica": "🇿🇦", "Corea del Sur": "🇰🇷", "República Checa": "🇨🇿",
 		"Canadá": "🇨🇦", "Bosnia y Herzegovina": "🇧🇦", "Catar": "🇶🇦", "Suiza": "🇨🇭",
-		"Brasil": "🇧🇷", "Marruecos": "🇲🇦", "Haití": "🇭🇹", "Escocia": "🏴",
+		"Brasil": "🇧🇷", "Marruecos": "🇲🇦", "Haití": "🇭🇹", "Escocia": "🏴󠁧󠁢󠁳󠁣󠁴󠁿",
 		"Estados Unidos": "🇺🇸", "Paraguay": "🇵🇾", "Australia": "🇦🇺", "Turquía": "🇹🇷",
 		"Alemania": "🇩🇪", "Curazao": "🇨🇼", "Costa de Marfil": "🇨🇮", "Ecuador": "🇪🇨",
 		"Países Bajos": "🇳🇱", "Japón": "🇯🇵", "Suecia": "🇸🇪", "Túnez": "🇹🇳",
@@ -102,31 +102,32 @@ func (r *SQLiteRepository) Seed() error {
 		"Francia": "🇫🇷", "Senegal": "🇸🇳", "Irak": "🇮🇶", "Noruega": "🇳🇴",
 		"Argentina": "🇦🇷", "Argelia": "🇩🇿", "Austria": "🇦🇹", "Jordania": "🇯🇴",
 		"Portugal": "🇵🇹", "República Democrática del Congo": "🇨🇩", "Uzbekistán": "🇺🇿", "Colombia": "🇨🇴",
-		"Inglaterra": "🏴", "Croacia": "🇭🇷", "Ghana": "🇬🇭", "Panamá": "🇵🇦",
+		"Inglaterra": "🏴󠁧󠁢󠁥󠁮󠁧󠁿", "Croacia": "🇭🇷", "Ghana": "🇬🇭", "Panamá": "🇵🇦",
 	}
 
 	matches := []struct {
 		Home  string
 		Away  string
 		Group string
+		Date  string
 	}{
-		{"México", "Sudáfrica", "A"}, {"México", "Corea del Sur", "A"}, {"México", "República Checa", "A"}, {"Sudáfrica", "Corea del Sur", "A"}, {"Sudáfrica", "República Checa", "A"}, {"Corea del Sur", "República Checa", "A"},
-		{"Canadá", "Bosnia y Herzegovina", "B"}, {"Canadá", "Catar", "B"}, {"Canadá", "Suiza", "B"}, {"Bosnia y Herzegovina", "Catar", "B"}, {"Bosnia y Herzegovina", "Suiza", "B"}, {"Catar", "Suiza", "B"},
-		{"Brasil", "Marruecos", "C"}, {"Brasil", "Haití", "C"}, {"Brasil", "Escocia", "C"}, {"Marruecos", "Haití", "C"}, {"Marruecos", "Escocia", "C"}, {"Haití", "Escocia", "C"},
-		{"Estados Unidos", "Paraguay", "D"}, {"Estados Unidos", "Australia", "D"}, {"Estados Unidos", "Turquía", "D"}, {"Paraguay", "Australia", "D"}, {"Paraguay", "Turquía", "D"}, {"Australia", "Turquía", "D"},
-		{"Alemania", "Curazao", "E"}, {"Alemania", "Costa de Marfil", "E"}, {"Alemania", "Ecuador", "E"}, {"Curazao", "Costa de Marfil", "E"}, {"Curazao", "Ecuador", "E"}, {"Costa de Marfil", "Ecuador", "E"},
-		{"Países Bajos", "Japón", "F"}, {"Países Bajos", "Suecia", "F"}, {"Países Bajos", "Túnez", "F"}, {"Japón", "Suecia", "F"}, {"Japón", "Túnez", "F"}, {"Suecia", "Túnez", "F"},
-		{"Bélgica", "Egipto", "G"}, {"Bélgica", "Irán", "G"}, {"Bélgica", "Nueva Zelanda", "G"}, {"Egipto", "Irán", "G"}, {"Egipto", "Nueva Zelanda", "G"}, {"Irán", "Nueva Zelanda", "G"},
-		{"España", "Cabo Verde", "H"}, {"España", "Arabia Saudita", "H"}, {"España", "Uruguay", "H"}, {"Cabo Verde", "Arabia Saudita", "H"}, {"Cabo Verde", "Uruguay", "H"}, {"Arabia Saudita", "Uruguay", "H"},
-		{"Francia", "Senegal", "I"}, {"Francia", "Irak", "I"}, {"Francia", "Noruega", "I"}, {"Senegal", "Irak", "I"}, {"Senegal", "Noruega", "I"}, {"Irak", "Noruega", "I"},
-		{"Argentina", "Argelia", "J"}, {"Argentina", "Austria", "J"}, {"Argentina", "Jordania", "J"}, {"Argelia", "Austria", "J"}, {"Argelia", "Jordania", "J"}, {"Austria", "Jordania", "J"},
-		{"Portugal", "República Democrática del Congo", "K"}, {"Portugal", "Uzbekistán", "K"}, {"Portugal", "Colombia", "K"}, {"República Democrática del Congo", "Uzbekistán", "K"}, {"República Democrática del Congo", "Colombia", "K"}, {"Uzbekistán", "Colombia", "K"},
-		{"Inglaterra", "Croacia", "L"}, {"Inglaterra", "Ghana", "L"}, {"Inglaterra", "Panamá", "L"}, {"Croacia", "Ghana", "L"}, {"Croacia", "Panamá", "L"}, {"Ghana", "Panamá", "L"},
+		{"México", "Sudáfrica", "A", "2026-06-11T19:00:00Z"}, {"México", "Corea del Sur", "A", "2026-06-12T02:00:00Z"}, {"México", "República Checa", "A", "2026-06-12T19:00:00Z"}, {"Sudáfrica", "Corea del Sur", "A", "2026-06-13T03:00:00Z"}, {"Sudáfrica", "República Checa", "A", "2026-06-13T19:00:00Z"}, {"Corea del Sur", "República Checa", "A", "2026-06-13T21:00:00Z"},
+		{"Canadá", "Bosnia y Herzegovina", "B", "2026-06-14T00:00:00Z"}, {"Canadá", "Catar", "B", "2026-06-14T03:00:00Z"}, {"Canadá", "Suiza", "B", "2026-06-14T17:00:00Z"}, {"Bosnia y Herzegovina", "Catar", "B", "2026-06-14T20:00:00Z"}, {"Bosnia y Herzegovina", "Suiza", "B", "2026-06-14T23:00:00Z"}, {"Catar", "Suiza", "B", "2026-06-15T02:00:00Z"},
+		{"Brasil", "Marruecos", "C", "2026-06-15T16:00:00Z"}, {"Brasil", "Haití", "C", "2026-06-15T19:00:00Z"}, {"Brasil", "Escocia", "C", "2026-06-15T22:00:00Z"}, {"Marruecos", "Haití", "C", "2026-06-16T01:00:00Z"}, {"Marruecos", "Escocia", "C", "2026-06-16T19:00:00Z"}, {"Haití", "Escocia", "C", "2026-06-16T22:00:00Z"},
+		{"Estados Unidos", "Paraguay", "D", "2026-06-17T01:00:00Z"}, {"Estados Unidos", "Australia", "D", "2026-06-17T04:00:00Z"}, {"Estados Unidos", "Turquía", "D", "2026-06-17T17:00:00Z"}, {"Paraguay", "Australia", "D", "2026-06-17T20:00:00Z"}, {"Paraguay", "Turquía", "D", "2026-06-17T23:00:00Z"}, {"Australia", "Turquía", "D", "2026-06-18T02:00:00Z"},
+		{"Alemania", "Curazao", "E", "2026-06-18T16:00:00Z"}, {"Alemania", "Costa de Marfil", "E", "2026-06-18T19:00:00Z"}, {"Alemania", "Ecuador", "E", "2026-06-18T22:00:00Z"}, {"Curazao", "Costa de Marfil", "E", "2026-06-19T01:00:00Z"}, {"Curazao", "Ecuador", "E", "2026-06-19T19:00:00Z"}, {"Costa de Marfil", "Ecuador", "E", "2026-06-19T22:00:00Z"},
+		{"Países Bajos", "Japón", "F", "2026-06-20T01:00:00Z"}, {"Países Bajos", "Suecia", "F", "2026-06-20T04:00:00Z"}, {"Países Bajos", "Túnez", "F", "2026-06-20T17:00:00Z"}, {"Japón", "Suecia", "F", "2026-06-20T20:00:00Z"}, {"Japón", "Túnez", "F", "2026-06-21T02:00:00Z"}, {"Suecia", "Túnez", "F", "2026-06-21T04:00:00Z"},
+		{"Bélgica", "Egipto", "G", "2026-06-21T16:00:00Z"}, {"Bélgica", "Irán", "G", "2026-06-21T19:00:00Z"}, {"Bélgica", "Nueva Zelanda", "G", "2026-06-21T22:00:00Z"}, {"Egipto", "Irán", "G", "2026-06-22T01:00:00Z"}, {"Egipto", "Nueva Zelanda", "G", "2026-06-22T17:00:00Z"}, {"Irán", "Nueva Zelanda", "G", "2026-06-22T21:00:00Z"},
+		{"España", "Cabo Verde", "H", "2026-06-23T00:00:00Z"}, {"España", "Arabia Saudita", "H", "2026-06-23T03:00:00Z"}, {"España", "Uruguay", "H", "2026-06-23T17:00:00Z"}, {"Cabo Verde", "Arabia Saudita", "H", "2026-06-23T20:00:00Z"}, {"Cabo Verde", "Uruguay", "H", "2026-06-23T23:00:00Z"}, {"Arabia Saudita", "Uruguay", "H", "2026-06-24T02:00:00Z"},
+		{"Francia", "Senegal", "I", "2026-06-24T19:00:00Z"}, {"Francia", "Irak", "I", "2026-06-24T19:00:00Z"}, {"Francia", "Noruega", "I", "2026-06-24T22:00:00Z"}, {"Senegal", "Irak", "I", "2026-06-24T22:00:00Z"}, {"Senegal", "Noruega", "I", "2026-06-25T01:00:00Z"}, {"Irak", "Noruega", "I", "2026-06-25T01:00:00Z"},
+		{"Argentina", "Argelia", "J", "2026-06-25T20:00:00Z"}, {"Argentina", "Austria", "J", "2026-06-25T20:00:00Z"}, {"Argentina", "Jordania", "J", "2026-06-25T23:00:00Z"}, {"Argelia", "Austria", "J", "2026-06-25T23:00:00Z"}, {"Argelia", "Jordania", "J", "2026-06-26T02:00:00Z"}, {"Austria", "Jordania", "J", "2026-06-26T02:00:00Z"},
+		{"Portugal", "República Democrática del Congo", "K", "2026-06-26T19:00:00Z"}, {"Portugal", "Uzbekistán", "K", "2026-06-26T19:00:00Z"}, {"Portugal", "Colombia", "K", "2026-06-27T00:00:00Z"}, {"República Democrática del Congo", "Uzbekistán", "K", "2026-06-27T00:00:00Z"}, {"República Democrática del Congo", "Colombia", "K", "2026-06-27T03:00:00Z"}, {"Uzbekistán", "Colombia", "K", "2026-06-27T03:00:00Z"},
+		{"Inglaterra", "Croacia", "L", "2026-06-27T21:00:00Z"}, {"Inglaterra", "Ghana", "L", "2026-06-27T21:00:00Z"}, {"Inglaterra", "Panamá", "L", "2026-06-27T23:30:00Z"}, {"Croacia", "Ghana", "L", "2026-06-27T23:30:00Z"}, {"Croacia", "Panamá", "L", "2026-06-28T02:00:00Z"}, {"Ghana", "Panamá", "L", "2026-06-28T02:00:00Z"},
 	}
 
 	for _, m := range matches {
 		_, err := r.DB.Exec("INSERT INTO matches (home_team, away_team, match_date, status, group_name, is_locked, home_flag, away_flag) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-			m.Home, m.Away, "2026-06-15 00:00:00", "scheduled", m.Group, 0, flags[m.Home], flags[m.Away])
+			m.Home, m.Away, m.Date, "scheduled", m.Group, 0, flags[m.Home], flags[m.Away])
 		if err != nil {
 			return err
 		}
