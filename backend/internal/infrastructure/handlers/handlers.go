@@ -329,8 +329,34 @@ func (h *StandingsHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 }
 
 type QualifierPredictionHandler struct {
-	Service    *services.QualifierPredictionService
-	MatchRepo  ports.MatchRepository
+	Service     *services.QualifierPredictionService
+	UserService *services.UserService
+	MatchRepo   ports.MatchRepository
+}
+
+func (h *QualifierPredictionHandler) GetByUser(w http.ResponseWriter, r *http.Request) {
+	SetCORS(w)
+	idStr := r.PathValue("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Invalid user id", http.StatusBadRequest)
+		return
+	}
+	if _, err := h.UserService.GetByID(id); err != nil {
+		http.Error(w, "User not found", http.StatusNotFound)
+		return
+	}
+	views, err := h.Service.GetViewsForUser(id)
+	if err != nil {
+		log.Printf("Error fetching qualifier views for user %d: %v", id, err)
+		http.Error(w, "Failed to fetch qualifier predictions", http.StatusInternalServerError)
+		return
+	}
+	if views == nil {
+		views = []ports.QualifierPredictionView{}
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(views)
 }
 
 func (h *QualifierPredictionHandler) GetMy(w http.ResponseWriter, r *http.Request) {

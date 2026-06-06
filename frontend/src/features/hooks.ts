@@ -144,3 +144,32 @@ export function useQualifierPrediction(groupName: string, userId: number) {
 
   return { prediction, setPrediction, save, loading, error, savedAt };
 }
+
+export function useQualifierPredictionsByUser(userId: number) {
+  const [views, setViews] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!userId) return;
+    const ctrl = new AbortController();
+    setLoading(true);
+    setError(null);
+    fetch(`${(apiClient as any).BASE_URL}/users/${userId}/qualifier-predictions`, {
+      signal: ctrl.signal,
+    })
+      .then(r => {
+        if (r.status === 404) throw new Error('Usuario no encontrado');
+        if (!r.ok) throw new Error(`Error ${r.status}`);
+        return r.json();
+      })
+      .then(data => setViews(Array.isArray(data) ? data : []))
+      .catch(err => {
+        if (err.name !== 'AbortError') setError(err.message);
+      })
+      .finally(() => setLoading(false));
+    return () => ctrl.abort();
+  }, [userId]);
+
+  return { views, loading, error };
+}

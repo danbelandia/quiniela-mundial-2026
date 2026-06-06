@@ -204,3 +204,61 @@ func (s *QualifierPredictionService) ScoreUser(userID int) (int, error) {
 	}
 	return total, nil
 }
+
+func (s *QualifierPredictionService) GetViewsForUser(userID int) ([]ports.QualifierPredictionView, error) {
+	preds, err := s.repo.GetAllQualifierPredictionsByUser(userID)
+	if err != nil {
+		return nil, err
+	}
+	if len(preds) == 0 {
+		return []ports.QualifierPredictionView{}, nil
+	}
+
+	matches, err := s.matchRepo.GetAllMatches()
+	if err != nil {
+		return nil, err
+	}
+
+	flagByGroupAndTeam := make(map[string]map[string]string)
+	matchesByGroup := make(map[string][]domain.Match)
+	for _, m := range matches {
+		if _, ok := flagByGroupAndTeam[m.Group]; !ok {
+			flagByGroupAndTeam[m.Group] = make(map[string]string)
+		}
+		flagByGroupAndTeam[m.Group][m.HomeTeam] = m.HomeFlag
+		flagByGroupAndTeam[m.Group][m.AwayTeam] = m.AwayFlag
+		matchesByGroup[m.Group] = append(matchesByGroup[m.Group], m)
+	}
+
+	views := make([]ports.QualifierPredictionView, 0, len(preds))
+	for _, p := range preds {
+		v := ports.QualifierPredictionView{
+			GroupName:          p.GroupName,
+			PredictedFirst:     p.PredictedFirst,
+			PredictedFirstFlag: flagByGroupAndTeam[p.GroupName][p.PredictedFirst],
+			PredictedSecond:    p.PredictedSecond,
+			PredictedSecondFlag: flagByGroupAndTeam[p.GroupName][p.PredictedSecond],
+		}
+		groupMatches := matchesByGroup[p.GroupName]
+		allFinished := len(groupMatches) > 0
+		for _, m := range groupMatches {
+			if m.Status != "finished" {
+				allFinished = false
+				break
+			}
+		}
+		if allFinished {
+			first, second, calcErr := domain.CalculateQualifiers(groupMatches, p.GroupName)
+			if calcErr == nil {
+				v.GroupClosed = true
+				v.ActualFirst = first
+				v.ActualFirstFlag = flagByGroupAndTeam[p.GroupName][first]
+				v.ActualSecond = second
+				v.ActualSecondFlag = flagByGroupAndTeam[p.GroupName][second]
+				v.PointsEarned = domain.QualifiersPointsEarned(first, second, p.PredictedFirst, p.PredictedSecond)
+			}
+		}
+		views = append(views, v)
+	}
+	return views, nil
+}

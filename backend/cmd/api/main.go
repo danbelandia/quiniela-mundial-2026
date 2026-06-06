@@ -39,8 +39,9 @@ func main() {
 	adminHandler := &handlers.AdminHandler{MatchService: matchService}
 	standingsHandler := &handlers.StandingsHandler{Service: standingsService}
 	qualifierHandler := &handlers.QualifierPredictionHandler{
-		Service:   qualifierService,
-		MatchRepo: repo,
+		Service:     qualifierService,
+		UserService: userService,
+		MatchRepo:   repo,
 	}
 
 	mux := http.NewServeMux()
@@ -77,6 +78,8 @@ func main() {
 	mux.HandleFunc("GET /standings", standingsHandler.GetAll)
 	mux.HandleFunc("OPTIONS /standings", handlers.HandleOptions)
 
+	mux.HandleFunc("GET /users/{id}/qualifier-predictions", qualifierHandler.GetByUser)
+	mux.HandleFunc("OPTIONS /users/{id}/qualifier-predictions", handlers.HandleOptions)
 	mux.HandleFunc("GET /groups/{group}/qualifier-predictions/me", qualifierHandler.GetMy)
 	mux.HandleFunc("OPTIONS /groups/{group}/qualifier-predictions/me", handlers.HandleOptions)
 	mux.HandleFunc("PUT /groups/{group}/qualifier-predictions", qualifierHandler.Upsert)

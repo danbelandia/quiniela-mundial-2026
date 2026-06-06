@@ -51,3 +51,17 @@ type QualifierPredictionRepository interface {
 	GetAllQualifierPredictionsByUser(userID int) ([]domain.QualifierPrediction, error)
 	GetAllQualifierPredictions() ([]domain.QualifierPrediction, error)
 }
+
+type QualifierPredictionView struct {
+	GroupName          string `json:"group_name"`
+	PredictedFirst     string `json:"predicted_first"`
+	PredictedFirstFlag string `json:"predicted_first_flag"`
+	PredictedSecond    string `json:"predicted_second"`
+	PredictedSecondFlag string `json:"predicted_second_flag"`
+	ActualFirst        string `json:"actual_first"`
+	ActualFirstFlag    string `json:"actual_first_flag"`
+	ActualSecond       string `json:"actual_second"`
+	ActualSecondFlag   string `json:"actual_second_flag"`
+	PointsEarned       int    `json:"points_earned"`
+	GroupClosed        bool   `json:"group_closed"`
+}
