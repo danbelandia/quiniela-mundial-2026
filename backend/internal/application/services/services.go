@@ -3,9 +3,12 @@ package services
 import (
 	"errors"
 	"strings"
+	"time"
 	"quiniela-backend/internal/core/domain"
 	"quiniela-backend/internal/core/ports"
 )
+
+var ErrMatchLocked = errors.New("match is locked")
 
 // MatchService
 type MatchService struct {
@@ -34,14 +37,23 @@ func (s *MatchService) LockAll(locked bool) error {
 
 // PredictionService
 type PredictionService struct {
-	repo ports.PredictionRepository
+	repo      ports.PredictionRepository
+	matchRepo ports.MatchRepository
+	lockWindow time.Duration
 }
 
-func NewPredictionService(repo ports.PredictionRepository) *PredictionService {
-	return &PredictionService{repo: repo}
+func NewPredictionService(repo ports.PredictionRepository, matchRepo ports.MatchRepository, lockWindow time.Duration) *PredictionService {
+	return &PredictionService{repo: repo, matchRepo: matchRepo, lockWindow: lockWindow}
 }
 
 func (s *PredictionService) PlacePrediction(p domain.Prediction) error {
+	match, err := s.matchRepo.GetMatchByID(p.MatchID)
+	if err != nil {
+		return err
+	}
+	if match.IsEffectivelyLocked(time.Now().UTC(), s.lockWindow) {
+		return ErrMatchLocked
+	}
 	return s.repo.Save(p)
 }
 
@@ -138,15 +150,26 @@ func (s *StandingsService) CalculateAll() ([]domain.GroupStanding, error) {
 
 // QualifierPredictionService
 type QualifierPredictionService struct {
-	repo      ports.QualifierPredictionRepository
-	matchRepo ports.MatchRepository
+	repo       ports.QualifierPredictionRepository
+	matchRepo  ports.MatchRepository
+	lockWindow time.Duration
 }
 
-func NewQualifierPredictionService(repo ports.QualifierPredictionRepository, matchRepo ports.MatchRepository) *QualifierPredictionService {
-	return &QualifierPredictionService{repo: repo, matchRepo: matchRepo}
+func NewQualifierPredictionService(repo ports.QualifierPredictionRepository, matchRepo ports.MatchRepository, lockWindow time.Duration) *QualifierPredictionService {
+	return &QualifierPredictionService{repo: repo, matchRepo: matchRepo, lockWindow: lockWindow}
 }
 
 func (s *QualifierPredictionService) Upsert(p domain.QualifierPrediction) error {
+	matches, err := s.matchRepo.GetAllMatches()
+	if err != nil {
+		return err
+	}
+	now := time.Now().UTC()
+	for _, m := range matches {
+		if m.Group == p.GroupName && m.IsEffectivelyLocked(now, s.lockWindow) {
+			return ErrMatchLocked
+		}
+	}
 	return s.repo.UpsertQualifierPrediction(p)
 }
 
