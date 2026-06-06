@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"quiniela-backend/internal/application/services"
@@ -54,6 +55,10 @@ func (h *PredictionHandler) CreatePrediction(w http.ResponseWriter, r *http.Requ
 	}
 
 	if err := h.Service.PlacePrediction(p); err != nil {
+		if errors.Is(err, services.ErrMatchLocked) {
+			http.Error(w, "match is locked", http.StatusForbidden)
+			return
+		}
 		log.Printf("Error saving prediction: %v", err)
 		http.Error(w, "Failed to save", http.StatusInternalServerError)
 		return
@@ -437,6 +442,10 @@ func (h *QualifierPredictionHandler) Upsert(w http.ResponseWriter, r *http.Reque
 	}
 
 	if err := h.Service.Upsert(p); err != nil {
+		if errors.Is(err, services.ErrMatchLocked) {
+			http.Error(w, "group is locked", http.StatusForbidden)
+			return
+		}
 		log.Printf("Error saving qualifier prediction: %v", err)
 		http.Error(w, "Failed to save: "+err.Error(), http.StatusInternalServerError)
 		return
