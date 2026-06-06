@@ -32,3 +32,6 @@ Thumbs.db
 
 # Opencode (project-specific)
 .opencode/
+
+# Backend one-shot fix scripts (compiled binaries)
+backend/*.exe
