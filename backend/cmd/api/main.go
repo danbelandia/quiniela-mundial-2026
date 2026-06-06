@@ -24,18 +24,24 @@ func main() {
 	rankingService := services.NewRankingService(repo)
 	userService := services.NewUserService(repo, repo)
 	standingsService := services.NewStandingsService(repo)
+	qualifierService := services.NewQualifierPredictionService(repo, repo)
 
 	matchHandler := &handlers.MatchHandler{Service: matchService}
 	predictionHandler := &handlers.PredictionHandler{Service: predictionService}
 	rankingHandler := &handlers.RankingHandler{
-		Service:     rankingService,
-		UserService: userService,
-		MatchRepo:   repo,
-		PredRepo:    repo,
+		Service:          rankingService,
+		UserService:      userService,
+		MatchRepo:        repo,
+		PredRepo:         repo,
+		QualifierService: qualifierService,
 	}
 	userHandler := &handlers.UserHandler{Service: userService}
 	adminHandler := &handlers.AdminHandler{MatchService: matchService}
 	standingsHandler := &handlers.StandingsHandler{Service: standingsService}
+	qualifierHandler := &handlers.QualifierPredictionHandler{
+		Service:   qualifierService,
+		MatchRepo: repo,
+	}
 
 	mux := http.NewServeMux()
 
@@ -70,6 +76,11 @@ func main() {
 
 	mux.HandleFunc("GET /standings", standingsHandler.GetAll)
 	mux.HandleFunc("OPTIONS /standings", handlers.HandleOptions)
+
+	mux.HandleFunc("GET /groups/{group}/qualifier-predictions/me", qualifierHandler.GetMy)
+	mux.HandleFunc("OPTIONS /groups/{group}/qualifier-predictions/me", handlers.HandleOptions)
+	mux.HandleFunc("PUT /groups/{group}/qualifier-predictions", qualifierHandler.Upsert)
+	mux.HandleFunc("OPTIONS /groups/{group}/qualifier-predictions", handlers.HandleOptions)
 
 	log.Println("Server starting on :8080...")
 	if err := http.ListenAndServe(":8080", mux); err != nil {

@@ -74,3 +74,73 @@ export function useStandings() {
 
   return { standings, loading, refresh: fetchStandings };
 }
+
+export function useQualifierPrediction(groupName: string, userId: number) {
+  const [prediction, setPrediction] = useState<{ predicted_first: string; predicted_second: string }>({
+    predicted_first: '',
+    predicted_second: '',
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [savedAt, setSavedAt] = useState<number>(0);
+  const debounceRef = { current: 0 as number | undefined };
+  const abortRef = { current: null as AbortController | null };
+
+  useEffect(() => {
+    if (!groupName || !userId) return;
+    const ctrl = new AbortController();
+    abortRef.current?.abort();
+    abortRef.current = ctrl;
+
+    setLoading(true);
+    setError(null);
+    fetch(`${(apiClient as any).BASE_URL}/groups/${encodeURIComponent(groupName)}/qualifier-predictions/me?user_id=${userId}`, {
+      signal: ctrl.signal,
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data) {
+          setPrediction({
+            predicted_first: data.predicted_first || '',
+            predicted_second: data.predicted_second || '',
+          });
+        }
+      })
+      .catch(err => {
+        if (err.name !== 'AbortError') setError(err.message);
+      })
+      .finally(() => setLoading(false));
+
+    return () => ctrl.abort();
+  }, [groupName, userId]);
+
+  const save = (first: string, second: string) => {
+    if (!groupName || !userId) return;
+    if (debounceRef.current) window.clearTimeout(debounceRef.current);
+    debounceRef.current = window.setTimeout(async () => {
+      setError(null);
+      try {
+        const r = await apiClient.rawFetch(
+          `/groups/${encodeURIComponent(groupName)}/qualifier-predictions`,
+          {
+            method: 'PUT',
+            body: JSON.stringify({
+              user_id: userId,
+              predicted_first: first,
+              predicted_second: second,
+            }),
+          }
+        );
+        if (!r.ok) {
+          setError(await r.text());
+          return;
+        }
+        setSavedAt(Date.now());
+      } catch (e: any) {
+        setError(e.message);
+      }
+    }, 800);
+  };
+
+  return { prediction, setPrediction, save, loading, error, savedAt };
+}

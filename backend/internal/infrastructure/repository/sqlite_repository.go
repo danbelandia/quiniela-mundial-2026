@@ -65,6 +65,16 @@ func (r *SQLiteRepository) Migrate() error {
 		FOREIGN KEY(user_id) REFERENCES users(id),
 		FOREIGN KEY(match_id) REFERENCES matches(id)
 	);
+	CREATE TABLE IF NOT EXISTS group_qualifier_predictions (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		user_id INTEGER NOT NULL,
+		group_name TEXT NOT NULL,
+		predicted_first TEXT NOT NULL,
+		predicted_second TEXT NOT NULL,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		UNIQUE(user_id, group_name),
+		FOREIGN KEY(user_id) REFERENCES users(id)
+	);
 	CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email);`
 	_, err := r.DB.Exec(query)
 	return err
@@ -389,4 +399,78 @@ func parseMatchDate(s string) time.Time {
 	}
 	log.Printf("warn: could not parse match_date: %q", s)
 	return time.Time{}
+}
+
+func (r *SQLiteRepository) UpsertQualifierPrediction(p domain.QualifierPrediction) error {
+	_, err := r.DB.Exec(`
+		INSERT INTO group_qualifier_predictions (user_id, group_name, predicted_first, predicted_second)
+		VALUES (?, ?, ?, ?)
+		ON CONFLICT(user_id, group_name) DO UPDATE SET
+			predicted_first = excluded.predicted_first,
+			predicted_second = excluded.predicted_second,
+			created_at = CURRENT_TIMESTAMP`,
+		p.UserID, p.GroupName, p.PredictedFirst, p.PredictedSecond)
+	return err
+}
+
+func (r *SQLiteRepository) GetQualifierPredictionByUserAndGroup(userID int, groupName string) (*domain.QualifierPrediction, error) {
+	row := r.DB.QueryRow(`
+		SELECT id, user_id, group_name, predicted_first, predicted_second, created_at
+		FROM group_qualifier_predictions
+		WHERE user_id = ? AND group_name = ?`, userID, groupName)
+	var p domain.QualifierPrediction
+	var createdAtStr string
+	err := row.Scan(&p.ID, &p.UserID, &p.GroupName, &p.PredictedFirst, &p.PredictedSecond, &createdAtStr)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	p.CreatedAt = parseMatchDate(createdAtStr)
+	return &p, nil
+}
+
+func (r *SQLiteRepository) GetAllQualifierPredictionsByUser(userID int) ([]domain.QualifierPrediction, error) {
+	rows, err := r.DB.Query(`
+		SELECT id, user_id, group_name, predicted_first, predicted_second, created_at
+		FROM group_qualifier_predictions WHERE user_id = ?`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var preds []domain.QualifierPrediction
+	for rows.Next() {
+		var p domain.QualifierPrediction
+		var createdAtStr string
+		if err := rows.Scan(&p.ID, &p.UserID, &p.GroupName, &p.PredictedFirst, &p.PredictedSecond, &createdAtStr); err != nil {
+			return nil, err
+		}
+		p.CreatedAt = parseMatchDate(createdAtStr)
+		preds = append(preds, p)
+	}
+	return preds, nil
+}
+
+func (r *SQLiteRepository) GetAllQualifierPredictions() ([]domain.QualifierPrediction, error) {
+	rows, err := r.DB.Query(`
+		SELECT id, user_id, group_name, predicted_first, predicted_second, created_at
+		FROM group_qualifier_predictions`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var preds []domain.QualifierPrediction
+	for rows.Next() {
+		var p domain.QualifierPrediction
+		var createdAtStr string
+		if err := rows.Scan(&p.ID, &p.UserID, &p.GroupName, &p.PredictedFirst, &p.PredictedSecond, &createdAtStr); err != nil {
+			return nil, err
+		}
+		p.CreatedAt = parseMatchDate(createdAtStr)
+		preds = append(preds, p)
+	}
+	return preds, nil
 }

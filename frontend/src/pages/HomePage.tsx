@@ -3,6 +3,7 @@ import { useMatches, useSubmitPrediction, useStandings } from '../features/hooks
 import { useAuth } from '../shared/AuthContext';
 import { apiClient } from '../shared/api/apiClient';
 import { GroupStandings } from '../components/GroupStandings';
+import { QualifierPredictionSection } from '../components/QualifierPredictionSection';
 
 export function HomePage() {
   const { matches, loading, refresh } = useMatches();
@@ -36,6 +37,22 @@ export function HomePage() {
   const filteredMatches = useMemo(() => {
     return matches.filter((m: any) => m.group === currentGroup);
   }, [matches, currentGroup]);
+
+  const groupIsLocked = useMemo(
+    () => filteredMatches.some((m: any) => m.is_locked),
+    [filteredMatches]
+  );
+
+  const teamsInGroup = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const m of filteredMatches) {
+      if (!map.has(m.home_team)) map.set(m.home_team, m.home_flag);
+      if (!map.has(m.away_team)) map.set(m.away_team, m.away_flag);
+    }
+    return Array.from(map.entries()).map(([name, flag]) => ({ name, flag }));
+  }, [filteredMatches]);
+
+  const currentUserId = parseInt(localStorage.getItem('userId') || '1');
 
   const handleSave = async (matchId: number) => {
     const s = scores[matchId] || { home: 0, away: 0 };
@@ -196,6 +213,13 @@ export function HomePage() {
       </div>
 
       <GroupStandings groupName={currentGroup} standings={standings} />
+
+      <QualifierPredictionSection
+        groupName={currentGroup}
+        userId={currentUserId}
+        isLocked={groupIsLocked}
+        teamsInGroup={teamsInGroup}
+      />
     </div>
   );
 }

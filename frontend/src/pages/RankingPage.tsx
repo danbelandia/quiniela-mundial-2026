@@ -22,7 +22,11 @@ export function RankingPage() {
 
   useEffect(() => {
     apiClient.get('/ranking').then(data => {
-      const sorted = data.sort((a: any, b: any) => b.score - a.score);
+      const enriched = data.map((u: any) => ({
+        ...u,
+        total: (u.score || 0) + (u.qualifier_score || 0),
+      }));
+      const sorted = enriched.sort((a: any, b: any) => b.total - a.total);
       setUsers(sorted);
     });
   }, []);
@@ -46,7 +50,9 @@ export function RankingPage() {
             <tr className="bg-gray-100 text-tm-blue uppercase text-sm">
               <th className="p-2 md:p-3 w-12">Pos.</th>
               <th className="p-2 md:p-3">Usuario</th>
-              <th className="p-2 md:p-3">Puntos</th>
+              <th className="p-2 md:p-3 text-center">Partidos</th>
+              <th className="p-2 md:p-3 text-center">Clasificación</th>
+              <th className="p-2 md:p-3">Total</th>
             </tr>
           </thead>
           <tbody>
@@ -62,7 +68,9 @@ export function RankingPage() {
                       {u.username}
                     </Link>
                   </td>
-                  <td className="p-2 md:p-3 font-bold text-tm-blue whitespace-nowrap">{u.score}</td>
+                  <td className="p-2 md:p-3 text-center whitespace-nowrap">{u.score || 0}</td>
+                  <td className="p-2 md:p-3 text-center whitespace-nowrap">{u.qualifier_score || 0}</td>
+                  <td className="p-2 md:p-3 font-bold text-tm-blue whitespace-nowrap">{u.total}</td>
                 </tr>
               );
             })}
@@ -128,11 +136,18 @@ export function RankingPage() {
                 <td className="p-2 md:p-3">Cualquier otro caso</td>
                 <td className="p-2 md:p-3 text-center font-bold text-red-600">0</td>
               </tr>
+              <tr className="border-b">
+                <td className="p-2 md:p-3">Acierto de 1° o 2° de grupo (cuando el grupo está cerrado)</td>
+                <td className="p-2 md:p-3 text-center font-bold text-tm-blue">3 c/u (máx 6 por grupo)</td>
+              </tr>
             </tbody>
           </table>
         </div>
         <p className="text-xs text-gray-500 mt-3 italic">
           "Ganador correcto" se determina comparando el signo de (goles local - goles visitante) del pronóstico con el del resultado real. El empate exacto ya queda cubierto por la regla de 3 puntos.
+        </p>
+        <p className="text-xs text-gray-500 mt-1 italic">
+          Los puntos de clasificación se otorgan solo cuando los 6 partidos del grupo finalizan. Los empates se resuelven con los criterios FIFA: puntos, diferencia de gol, goles a favor, head-to-head, y sorteo determinístico.
         </p>
       </div>
     </div>

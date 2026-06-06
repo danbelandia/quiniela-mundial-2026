@@ -74,10 +74,11 @@ func (h *PredictionHandler) GetPredictions(w http.ResponseWriter, r *http.Reques
 }
 
 type RankingHandler struct {
-	Service     *services.RankingService
-	UserService *services.UserService
-	MatchRepo   ports.MatchRepository
-	PredRepo    ports.PredictionRepository
+	Service             *services.RankingService
+	UserService         *services.UserService
+	MatchRepo           ports.MatchRepository
+	PredRepo            ports.PredictionRepository
+	QualifierService    *services.QualifierPredictionService
 }
 
 func (h *RankingHandler) GetRanking(w http.ResponseWriter, r *http.Request) {
@@ -87,7 +88,7 @@ func (h *RankingHandler) GetRanking(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to get users", http.StatusInternalServerError)
 		return
 	}
-	
+
 	if users == nil {
 		users = []domain.User{}
 	}
@@ -111,6 +112,13 @@ func (h *RankingHandler) GetRanking(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		users[i].Score = score
+
+		if h.QualifierService != nil {
+			qScore, qErr := h.QualifierService.ScoreUser(u.ID)
+			if qErr == nil {
+				users[i].QualifierScore = qScore
+			}
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -318,4 +326,101 @@ func (h *StandingsHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	json.NewEncoder(w).Encode(standings)
+}
+
+type QualifierPredictionHandler struct {
+	Service    *services.QualifierPredictionService
+	MatchRepo  ports.MatchRepository
+}
+
+func (h *QualifierPredictionHandler) GetMy(w http.ResponseWriter, r *http.Request) {
+	SetCORS(w)
+	groupName := r.PathValue("group")
+	userIDStr := r.URL.Query().Get("user_id")
+	if groupName == "" {
+		http.Error(w, "group is required", http.StatusBadRequest)
+		return
+	}
+	if userIDStr == "" {
+		http.Error(w, "user_id is required", http.StatusBadRequest)
+		return
+	}
+	userID, err := strconv.Atoi(userIDStr)
+	if err != nil {
+		http.Error(w, "invalid user_id", http.StatusBadRequest)
+		return
+	}
+
+	pred, err := h.Service.GetByUserAndGroup(userID, groupName)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if pred == nil {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]any{
+			"group_name":       groupName,
+			"predicted_first":  "",
+			"predicted_second": "",
+		})
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(pred)
+}
+
+func (h *QualifierPredictionHandler) Upsert(w http.ResponseWriter, r *http.Request) {
+	SetCORS(w)
+	groupName := r.PathValue("group")
+	if groupName == "" {
+		http.Error(w, "group is required", http.StatusBadRequest)
+		return
+	}
+
+	var p domain.QualifierPrediction
+	if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
+	p.GroupName = groupName
+
+	if p.UserID == 0 || p.PredictedFirst == "" || p.PredictedSecond == "" {
+		http.Error(w, "user_id, predicted_first and predicted_second are required", http.StatusBadRequest)
+		return
+	}
+	if p.PredictedFirst == p.PredictedSecond {
+		http.Error(w, "predicted_first and predicted_second must be different teams", http.StatusBadRequest)
+		return
+	}
+
+	matches, err := h.MatchRepo.GetAllMatches()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	teamsInGroup := make(map[string]bool)
+	for _, m := range matches {
+		if m.Group == groupName {
+			teamsInGroup[m.HomeTeam] = true
+			teamsInGroup[m.AwayTeam] = true
+		}
+	}
+	if !teamsInGroup[p.PredictedFirst] || !teamsInGroup[p.PredictedSecond] {
+		http.Error(w, "predicted team is not in the group", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.Service.Upsert(p); err != nil {
+		log.Printf("Error saving qualifier prediction: %v", err)
+		http.Error(w, "Failed to save: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	saved, err := h.Service.GetByUserAndGroup(p.UserID, groupName)
+	if err != nil || saved == nil {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(saved)
 }

@@ -135,3 +135,72 @@ func (s *StandingsService) CalculateAll() ([]domain.GroupStanding, error) {
 	}
 	return domain.CalculateStandings(matches), nil
 }
+
+// QualifierPredictionService
+type QualifierPredictionService struct {
+	repo      ports.QualifierPredictionRepository
+	matchRepo ports.MatchRepository
+}
+
+func NewQualifierPredictionService(repo ports.QualifierPredictionRepository, matchRepo ports.MatchRepository) *QualifierPredictionService {
+	return &QualifierPredictionService{repo: repo, matchRepo: matchRepo}
+}
+
+func (s *QualifierPredictionService) Upsert(p domain.QualifierPrediction) error {
+	return s.repo.UpsertQualifierPrediction(p)
+}
+
+func (s *QualifierPredictionService) GetByUserAndGroup(userID int, groupName string) (*domain.QualifierPrediction, error) {
+	return s.repo.GetQualifierPredictionByUserAndGroup(userID, groupName)
+}
+
+func (s *QualifierPredictionService) ScoreUser(userID int) (int, error) {
+	preds, err := s.repo.GetAllQualifierPredictionsByUser(userID)
+	if err != nil {
+		return 0, err
+	}
+	if len(preds) == 0 {
+		return 0, nil
+	}
+
+	matches, err := s.matchRepo.GetAllMatches()
+	if err != nil {
+		return 0, err
+	}
+
+	total := 0
+	groupsSeen := make(map[string]bool)
+	for _, p := range preds {
+		if groupsSeen[p.GroupName] {
+			continue
+		}
+		groupsSeen[p.GroupName] = true
+
+		groupMatches := make([]domain.Match, 0)
+		for _, m := range matches {
+			if m.Group == p.GroupName {
+				groupMatches = append(groupMatches, m)
+			}
+		}
+		if len(groupMatches) == 0 {
+			continue
+		}
+		allFinished := true
+		for _, m := range groupMatches {
+			if m.Status != "finished" {
+				allFinished = false
+				break
+			}
+		}
+		if !allFinished {
+			continue
+		}
+
+		first, second, err := domain.CalculateQualifiers(groupMatches, p.GroupName)
+		if err != nil {
+			continue
+		}
+		total += domain.QualifiersPointsEarned(first, second, p.PredictedFirst, p.PredictedSecond)
+	}
+	return total, nil
+}
