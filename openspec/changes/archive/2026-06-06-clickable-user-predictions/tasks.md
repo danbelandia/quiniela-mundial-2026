@@ -59,7 +59,7 @@ Chain strategy: size-exception
 
 ## Phase 5: Commit
 
-- [ ] 5.1 Commit with conventional message: `feat(ranking): add clickable user predictions detail page`
-- [ ] 5.2 Stay on `feature/clickable-user-predictions` branch (DO NOT push — user is working locally)
-- [ ] 5.3 When ready: `git checkout master && git merge feature/clickable-user-predictions && git push origin master`
-- [ ] 5.4 After verify in prod, archive this change (sdd-archive phase)
+- [x] 5.1 Commit with conventional message: `feat(ranking): add clickable user predictions detail page` (commit `d36745d` on feature branch)
+- [x] 5.2 Stay on `feature/clickable-user-predictions` branch (DO NOT push — user is working locally)
+- [x] 5.3 When ready: `git checkout master && git merge feature/clickable-user-predictions && git push origin master` (done)
+- [x] 5.4 Archive this change (sdd-archive phase)

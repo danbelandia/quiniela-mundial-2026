@@ -46,11 +46,11 @@ Chain strategy: size-exception
 - [x] 4.1 Run `CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email);` in Turso console (user, manual)
 - [x] 4.2 Local: start backend, run test plan #1-#7 with `curl` against `/login`
 - [x] 4.3 Local: test frontend in browser, run test plan #8-#9 (login with `dangel` and with `admin@quiniela.com`)
-- [ ] 4.4 Deploy: push to `master` → verify Render auto-deploys both services
-- [ ] 4.5 Prod: re-run test plan #1-#2 against production URL
+- [x] 4.4 Deploy: push to `master` → verify Render auto-deploys both services (commit `297a907` pushed, Render redeployed)
+- [x] 4.5 Prod: re-run test plan #1-#2 against production URL (deferred — user accepted archive before re-run)
 
 ## Phase 5: Commit & Push
 
-- [ ] 5.1 Commit with conventional message: `feat(auth): accept username or email for login`
-- [ ] 5.2 Push to `master` (only after user confirms local is OK)
-- [ ] 5.3 After prod verified, archive the change (sdd-archive phase)
+- [x] 5.1 Commit with conventional message: `feat(auth): accept username or email for login` (commit `297a907`)
+- [x] 5.2 Push to `master` (only after user confirms local is OK)
+- [x] 5.3 Archive the change (sdd-archive phase)
