@@ -12,12 +12,14 @@ Time-based effective lock computed in two places for two different consumers: at
 | Inject `now` into repo | `clock func() time.Time` field, default `time.Now` | Global / package var / interface | Mockable in future tests; no global state; no extra interface needed yet |
 | Inject `lockWindow` | Constructor param on repo | Package var / env-read inside repo | Matches existing pattern (`driverName`, `connStr` already ctor-injected) |
 | Service-level error | `var ErrMatchLocked = errors.New("match is locked")` | bool return / string sentinel | Idiomatic Go; `errors.Is` in handler |
-| Qualifier group lock rule | Reject if **any** match in group is effectively locked | First match in window / all matches locked | Mirrors existing frontend `groupIsLocked = filteredMatches.some(m => m.is_locked)` (HomePage.tsx:41-44) |
-| Frontend changes | None | Various | Frontend already reads `is_locked` and disables inputs |
-| Tests | Only `domain/match_test.go` (5 cases) | Full integration | Project has 0 tests; start with the highest-value unit |
+| Qualifier lock rule | Reject if `now >= global_deadline` (single timestamp, all groups) | Per-group: any match in window / first match in window | User requirement: force users to commit qualifiers BEFORE the World Cup starts (1h before opener), not per-group staggered. Cleaner mental model: "you commit, then the World Cup plays" |
+| Qualifier deadline source | `QUALIFIER_LOCK_AT` env var, default `2026-06-11T18:00:00Z` (1h before opener MEX-RSA) | Hardcoded constant / per-group derived | Default encodes business rule; env var makes it testable and overridable in prod without rebuild |
+| Global config endpoint | New `GET /config` returns `{qualifier_lock_at, match_lock_window_hours}` | Hardcode in frontend / read from `package.json` / `/settings` | Single source of truth; avoids drift between Go default and TS hardcode |
+| Frontend changes | New `useConfig` hook + `HomePage.tsx` per-group check replaced with global timestamp comparison | Per-group check stays as-is | Frontend previously computed lock from per-group `is_locked`; now uses the global timestamp from `/config` |
+| Tests | `domain/match_test.go` (5 cases) | Full integration | Project has 0 tests; start with the highest-value unit |
 | Migration | None | Schema change | `is_locked` column already exists |
 | Admin override | Preserved | Remove endpoints | User explicit requirement: keep manual lock for edge cases |
-| Env var fallback | Invalid value → log warning + default 3h | Hard fail | Matches the spec's "graceful degradation" scenario |
+| Env var fallback | Invalid value → log warning + default | Hard fail | Matches the spec's "graceful degradation" scenario |
 
 ## Data Flow
 
@@ -62,13 +64,15 @@ Time-based effective lock computed in two places for two different consumers: at
 
 | File | Action | Description |
 |------|--------|-------------|
-| `backend/internal/core/domain/match.go` | Modify | Add `IsEffectivelyLocked(now time.Time) bool` method; reads `lockWindow` from a package-level `var LockWindow = 3*time.Hour` set at init, OR receives it as a 2nd param. **Decision**: 2nd param to keep it pure and testable |
+| `backend/internal/core/domain/match.go` | Modify | Add `IsEffectivelyLocked(now time.Time) bool` method; receives `window` as 2nd param to keep it pure and testable |
 | `backend/internal/core/domain/match_test.go` | Create | First test file. Table-driven, 5 cases. Uses fixed `time.Time` for `now` and `matchDate` |
-| `backend/internal/infrastructure/repository/sqlite_repository.go` | Modify | Add `lockWindow time.Duration` + `clock func() time.Time` fields; constructor `NewSQLiteRepository(driver, conn, lockWindow)`; init `clock = time.Now` if nil; override `IsLocked` in 3 Scan loops (lines ~161, ~175, ~253) right after Scan |
-| `backend/internal/application/services/services.go` | Modify | Add `var ErrMatchLocked = errors.New("match is locked")`; `PredictionService` needs `matchRepo ports.MatchRepository` (add to struct + ctor); `PlacePrediction` fetches match, checks lock, then saves; `QualifierPredictionService.Upsert` fetches all group matches, checks if any locked |
-| `backend/internal/infrastructure/handlers/handlers.go` | Modify | `PredictionHandler.CreatePrediction` maps `ErrMatchLocked` → 403; `QualifierPredictionHandler.Upsert` does the same |
-| `backend/cmd/api/main.go` | Modify | `buildAppConfig()` reads `LOCK_WINDOW_HOURS` (default 3.0, warning on invalid); pass `lockWindow` to `NewSQLiteRepository` |
-| `backend/.env.example` | Create | Document `LOCK_WINDOW_HOURS=3` |
+| `backend/internal/infrastructure/repository/sqlite_repository.go` | Modify | Add `lockWindow time.Duration` + `clock func() time.Time` fields; constructor `NewSQLiteRepository(driver, conn, lockWindow)`; init `clock = time.Now` if nil; override `IsLocked` in 3 Scan loops right after Scan |
+| `backend/internal/application/services/services.go` | Modify | Add `var ErrMatchLocked = errors.New("match is locked")`; `PredictionService` needs `matchRepo` + `lockWindow`; `PlacePrediction` fetches match, checks lock, then saves; `QualifierPredictionService` gets `qualifierLockAt time.Time`; `Upsert` checks `now >= qualifierLockAt` (replaces per-group match check) |
+| `backend/internal/infrastructure/handlers/handlers.go` | Modify | `PredictionHandler.CreatePrediction` maps `ErrMatchLocked` → 403; `QualifierPredictionHandler.Upsert` does the same; new `ConfigHandler.Get` returns the global config JSON |
+| `backend/cmd/api/main.go` | Modify | `buildLockWindow()` reads `LOCK_WINDOW_HOURS` (default 3.0, warning on invalid); `buildQualifierLockAt()` reads `QUALIFIER_LOCK_AT` (default `2026-06-11T18:00:00Z`, warning on invalid); new route `GET /config`; pass `qualifierLockAt` to `QualifierPredictionService` |
+| `backend/.env.example` | Create | Document `LOCK_WINDOW_HOURS=3` and `QUALIFIER_LOCK_AT=2026-06-11T18:00:00Z` |
+| `frontend/src/features/hooks.ts` | Modify | Add `useConfig` hook that fetches `GET /config` and caches the result |
+| `frontend/src/pages/HomePage.tsx` | Modify | Replace per-group `filteredMatches.some(m => m.is_locked)` with a global timestamp check: `Date.now() >= new Date(config.qualifier_lock_at).getTime()` |
 | `openspec/specs/auto-lock-matches/spec.md` | Create (on archive) | Synced from `openspec/changes/auto-lock-matches/specs/auto-lock-matches/spec.md` |
 
 ## Interfaces / Contracts
@@ -85,6 +89,13 @@ func (m Match) IsEffectivelyLocked(now time.Time, window time.Duration) bool {
 // backend/internal/application/services/services.go
 var ErrMatchLocked = errors.New("match is locked")
 
+type QualifierPredictionService struct {
+    repo            ports.QualifierPredictionRepository
+    matchRepo       ports.MatchRepository
+    lockWindow      time.Duration
+    qualifierLockAt time.Time  // global deadline; predictions close at this instant
+}
+
 // backend/internal/infrastructure/repository/sqlite_repository.go
 type SQLiteRepository struct {
     DB         *sql.DB
@@ -93,6 +104,9 @@ type SQLiteRepository struct {
 }
 
 func NewSQLiteRepository(driverName, connStr string, lockWindow time.Duration) (*SQLiteRepository, error)
+
+// HTTP: GET /config
+// Response: { "qualifier_lock_at": "2026-06-11T18:00:00Z", "match_lock_window_hours": 3 }
 ```
 
 The helper's contract: `IsLocked` is a manual override and always wins. The window check is `now + window >= matchDate` (boundary inclusive, matching the spec's "exactly at the boundary → locked" scenario). Times are UTC.
@@ -115,4 +129,4 @@ Rollout: standard `master` merge → Render auto-deploys. Feature flag not neede
 
 ## Open Questions
 
-None blocking. The qualifier group rule (any-match-locked → group-locked) is the defensible default that matches existing frontend semantics. If we later need "lock when first match of group is in window", it's a one-line change in `QualifierPredictionService.Upsert`.
+None blocking. The qualifier rule is now a single global deadline configured via `QUALIFIER_LOCK_AT`; the per-group check has been removed. If business needs change (e.g. stagger the deadline per group), the change is localized to `QualifierPredictionService.Upsert` and the `GET /config` response shape.

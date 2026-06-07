@@ -64,10 +64,30 @@ Chain strategy: pending
 - [ ] 5.5 `curl POST /predictions` with that match's id — expect `403 match is locked`
 - [ ] 5.6 Pick a match 5h out, `curl POST /predictions` — expect `201 Created`
 - [ ] 5.7 `curl POST /admin/matches/lock {id: 1, locked: true}` — confirm `GET /matches` shows it locked immediately (manual override works)
-- [ ] 5.8 Pick a group with one match in the window, `curl PUT /groups/A/qualifier-predictions` — expect `403 group is locked`
+- [ ] 5.8 Pick a group with one match in the window, `curl PUT /groups/A/qualifier-predictions` — expect `200 OK` (per-group match lock no longer blocks qualifier)
 - [ ] 5.9 Pick a fully-open group, `curl PUT /groups/...` — expect `200 OK`
 - [ ] 5.10 Commit on `feature/auto-lock-matches` (single commit or split: `feat(domain):`, `feat(repo):`, `feat(service):`, `chore(config):`)
 - [ ] 5.11 Stop. Do NOT push. Do NOT merge. Report results to user.
+
+## Phase 6: Global qualifier deadline (added after user clarification)
+
+User requirement: qualifier predictions for all 12 groups must close at a single global timestamp (default `2026-06-11T18:00:00Z` = 06-11 14:00 CLT, 1h before opener MEX-RSA), independent of per-match lock states.
+
+- [ ] 6.1 In `backend/cmd/api/main.go`, add `buildQualifierLockAt()` helper reading `QUALIFIER_LOCK_AT` env var; default `2026-06-11T18:00:00Z`; warn on invalid/unparseable
+- [ ] 6.2 In `backend/internal/application/services/services.go`, add `qualifierLockAt time.Time` field to `QualifierPredictionService` struct; update `NewQualifierPredictionService` signature
+- [ ] 6.3 In `QualifierPredictionService.Upsert`, replace the per-group match iteration with a single `time.Now().UTC().After(s.qualifierLockAt)` (or `>=`) check
+- [ ] 6.4 In `backend/cmd/api/main.go`, pass `qualifierLockAt` to `NewQualifierPredictionService`; add route `GET /config` returning `{"qualifier_lock_at": "<RFC3339>", "match_lock_window_hours": <float>}`
+- [ ] 6.5 In `backend/.env.example`, add `QUALIFIER_LOCK_AT=2026-06-11T18:00:00Z` with a comment explaining the business rule
+- [ ] 6.6 In `frontend/src/features/hooks.ts`, add `useConfig` hook (TanStack Query) that fetches `GET /config` and returns `{ qualifier_lock_at: string, match_lock_window_hours: number }`
+- [ ] 6.7 In `frontend/src/pages/HomePage.tsx`, replace per-group `groupIsLocked = filteredMatches.some(m => m.is_locked)` with a global check: `groupIsLocked = Date.now() >= new Date(config.qualifier_lock_at).getTime()`
+- [ ] 6.8 Run `go build ./...` — must compile
+- [ ] 6.9 Run `npm run build` in `frontend/` — must compile (TS typecheck via Vite)
+- [ ] 6.10 Smoke test: start API with default `QUALIFIER_LOCK_AT`; `curl GET /config` → expect `{"qualifier_lock_at": "2026-06-11T18:00:00Z", "match_lock_window_hours": 3}`; `curl PUT /groups/A/qualifier-predictions` with a valid body (dangel user) → expect `200 OK` (now is well before the deadline)
+- [ ] 6.11 Smoke test: restart API with `QUALIFIER_LOCK_AT=2026-06-06T18:00:00Z` (1h in the past); `curl PUT /groups/A/qualifier-predictions` → expect `403 match is locked`; verify `GET /config` returns the overridden timestamp
+- [ ] 6.12 Commit on `feature/auto-lock-matches`: `docs(openspec): change qualifier lock rule from per-group to global deadline`
+- [ ] 6.13 Commit: `feat(backend): add QUALIFIER_LOCK_AT env var and /config endpoint, enforce global deadline`
+- [ ] 6.14 Commit: `feat(frontend): use global qualifier deadline from /config in HomePage`
+- [ ] 6.15 Stop. Do NOT push. Do NOT merge. Report results to user.
 
 ## Notes
 
@@ -75,3 +95,4 @@ Chain strategy: pending
 - Times are UTC everywhere; the helper is pure (takes `now` as param) so tests don't need a clock mock.
 - The `IsEffectivelyLocked` helper is in `domain`, not `ports`, because it's behavior of the entity, not infrastructure.
 - The `lockWindow` is duplicated in the repo and the services for clarity; alternative is to expose `repo.LockWindow()` and read from there. **Decision during apply**: pick whichever is cleaner after seeing the actual call sites.
+- The qualifier deadline `2026-06-11T18:00:00Z` is the project's business rule: 1 hour before the World Cup 2026 opener MEX-RSA. Configurable via `QUALIFIER_LOCK_AT` for testing and emergency overrides.
