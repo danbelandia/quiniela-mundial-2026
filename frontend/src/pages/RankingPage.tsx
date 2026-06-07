@@ -130,7 +130,7 @@ export function RankingPage() {
               </tr>
               <tr className="border-b">
                 <td className="p-2 md:p-3">Empate pronosticado, resultado fue empate, marcador incorrecto</td>
-                <td className="p-2 md:p-3 text-center font-bold text-yellow-600">1</td>
+                <td className="p-2 md:p-3 text-center font-bold text-yellow-600">2</td>
               </tr>
               <tr className="border-b">
                 <td className="p-2 md:p-3">Cualquier otro caso</td>

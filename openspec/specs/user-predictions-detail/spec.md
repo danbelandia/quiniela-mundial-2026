@@ -15,7 +15,7 @@ The `GET /users/{id}/predictions` endpoint SHALL return a JSON object with the u
 - GIVEN a user with 72 predictions
 - WHEN `GET /users/{id}/predictions` is called with that user's id
 - THEN the response is `200 OK` with the user object and an array of 72 predictions
-- AND each prediction has the match info, predicted scores, and points (0, 1, 2, or 3)
+- AND each prediction has the match info, predicted scores, and points (0, 2, or 3)
 
 #### Scenario: User has no predictions
 
@@ -42,7 +42,7 @@ The `GET /users/{id}/predictions` endpoint SHALL return a JSON object with the u
 
 - GIVEN a finished match where the real result is 1-1
 - WHEN a user predicted 0-0 (draw predicted, draw real, wrong score)
-- THEN the prediction's `points` field SHALL be `1`
+- THEN the prediction's `points` field SHALL be `2`
 
 - GIVEN a finished match where the real result is 1-0
 - WHEN a user predicted 2-1 (wrong winner)

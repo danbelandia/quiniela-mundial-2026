@@ -13,7 +13,7 @@ func (p *Prediction) PointsEarned(actualHome, actualAway int) int {
 		return 3
 	}
 	if p.HomeScore == p.AwayScore && actualHome == actualAway {
-		return 1
+		return 2
 	}
 	predHomeWin := p.HomeScore > p.AwayScore
 	actualHomeWin := actualHome > actualAway
