@@ -150,25 +150,19 @@ func (s *StandingsService) CalculateAll() ([]domain.GroupStanding, error) {
 
 // QualifierPredictionService
 type QualifierPredictionService struct {
-	repo       ports.QualifierPredictionRepository
-	matchRepo  ports.MatchRepository
-	lockWindow time.Duration
+	repo            ports.QualifierPredictionRepository
+	matchRepo       ports.MatchRepository
+	lockWindow      time.Duration
+	qualifierLockAt time.Time
 }
 
-func NewQualifierPredictionService(repo ports.QualifierPredictionRepository, matchRepo ports.MatchRepository, lockWindow time.Duration) *QualifierPredictionService {
-	return &QualifierPredictionService{repo: repo, matchRepo: matchRepo, lockWindow: lockWindow}
+func NewQualifierPredictionService(repo ports.QualifierPredictionRepository, matchRepo ports.MatchRepository, lockWindow time.Duration, qualifierLockAt time.Time) *QualifierPredictionService {
+	return &QualifierPredictionService{repo: repo, matchRepo: matchRepo, lockWindow: lockWindow, qualifierLockAt: qualifierLockAt}
 }
 
 func (s *QualifierPredictionService) Upsert(p domain.QualifierPrediction) error {
-	matches, err := s.matchRepo.GetAllMatches()
-	if err != nil {
-		return err
-	}
-	now := time.Now().UTC()
-	for _, m := range matches {
-		if m.Group == p.GroupName && m.IsEffectivelyLocked(now, s.lockWindow) {
-			return ErrMatchLocked
-		}
+	if !time.Now().UTC().Before(s.qualifierLockAt) {
+		return ErrMatchLocked
 	}
 	return s.repo.UpsertQualifierPrediction(p)
 }

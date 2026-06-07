@@ -15,6 +15,7 @@ import (
 func main() {
 	driverName, connStr := buildDBConfig()
 	lockWindow := buildLockWindow()
+	qualifierLockAt := buildQualifierLockAt()
 
 	repo, err := repository.NewSQLiteRepository(driverName, connStr, lockWindow)
 	if err != nil {
@@ -27,7 +28,7 @@ func main() {
 	rankingService := services.NewRankingService(repo)
 	userService := services.NewUserService(repo, repo)
 	standingsService := services.NewStandingsService(repo)
-	qualifierService := services.NewQualifierPredictionService(repo, repo, lockWindow)
+	qualifierService := services.NewQualifierPredictionService(repo, repo, lockWindow, qualifierLockAt)
 
 	matchHandler := &handlers.MatchHandler{Service: matchService}
 	predictionHandler := &handlers.PredictionHandler{Service: predictionService}
@@ -46,8 +47,15 @@ func main() {
 		UserService: userService,
 		MatchRepo:   repo,
 	}
+	configHandler := &handlers.ConfigHandler{
+		QualifierLockAt:  qualifierLockAt,
+		MatchLockWindow:  lockWindow,
+	}
 
 	mux := http.NewServeMux()
+
+	mux.HandleFunc("GET /config", configHandler.Get)
+	mux.HandleFunc("OPTIONS /config", handlers.HandleOptions)
 
 	mux.HandleFunc("GET /matches", matchHandler.GetMatches)
 	mux.HandleFunc("OPTIONS /matches", handlers.HandleOptions)
@@ -123,4 +131,25 @@ func buildLockWindow() time.Duration {
 	window := time.Duration(hours * float64(time.Hour))
 	log.Printf("lock window configured: %s (%.4f hours)", window, hours)
 	return window
+}
+
+func buildQualifierLockAt() time.Time {
+	const defaultDeadline = "2026-06-11T18:00:00Z"
+	raw := os.Getenv("QUALIFIER_LOCK_AT")
+	if raw == "" {
+		t, err := time.Parse(time.RFC3339, defaultDeadline)
+		if err != nil {
+			log.Fatalf("invalid default QUALIFIER_LOCK_AT=%q: %v", defaultDeadline, err)
+		}
+		log.Printf("qualifier lock deadline (default): %s", t.UTC().Format(time.RFC3339))
+		return t.UTC()
+	}
+	t, err := time.Parse(time.RFC3339, raw)
+	if err != nil {
+		log.Printf("warn: invalid QUALIFIER_LOCK_AT=%q, using default %s", raw, defaultDeadline)
+		t, _ = time.Parse(time.RFC3339, defaultDeadline)
+		return t.UTC()
+	}
+	log.Printf("qualifier lock deadline configured: %s", t.UTC().Format(time.RFC3339))
+	return t.UTC()
 }

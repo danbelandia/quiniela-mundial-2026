@@ -10,6 +10,7 @@ import (
 	"quiniela-backend/internal/core/ports"
 	"strconv"
 	"strings"
+	"time"
 )
 
 func SetCORS(w http.ResponseWriter) {
@@ -458,4 +459,20 @@ func (h *QualifierPredictionHandler) Upsert(w http.ResponseWriter, r *http.Reque
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(saved)
+}
+
+// ConfigHandler exposes global settings (lock deadlines, windows) so the
+// frontend can align its UI state with the server.
+type ConfigHandler struct {
+	QualifierLockAt time.Time
+	MatchLockWindow time.Duration
+}
+
+func (h *ConfigHandler) Get(w http.ResponseWriter, r *http.Request) {
+	SetCORS(w)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]any{
+		"qualifier_lock_at":      h.QualifierLockAt.UTC().Format(time.RFC3339),
+		"match_lock_window_hours": h.MatchLockWindow.Hours(),
+	})
 }
