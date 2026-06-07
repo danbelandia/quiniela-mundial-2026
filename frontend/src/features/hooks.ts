@@ -173,3 +173,29 @@ export function useQualifierPredictionsByUser(userId: number) {
 
   return { views, loading, error };
 }
+
+export interface AppConfig {
+  qualifier_lock_at: string;
+  match_lock_window_hours: number;
+}
+
+export function useConfig() {
+  const [config, setConfig] = useState<AppConfig | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const ctrl = new AbortController();
+    fetch(`${(apiClient as any).BASE_URL}/config`, { signal: ctrl.signal })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data) setConfig(data);
+      })
+      .catch(err => {
+        if (err.name !== 'AbortError') console.error('useConfig error:', err);
+      })
+      .finally(() => setLoading(false));
+    return () => ctrl.abort();
+  }, []);
+
+  return { config, loading };
+}

@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useMatches, useSubmitPrediction, useStandings } from '../features/hooks';
+import { useMatches, useSubmitPrediction, useStandings, useConfig } from '../features/hooks';
 import { useAuth } from '../shared/AuthContext';
 import { apiClient } from '../shared/api/apiClient';
 import { GroupStandings } from '../components/GroupStandings';
@@ -9,6 +9,7 @@ export function HomePage() {
   const { matches, loading, refresh } = useMatches();
   const { submit } = useSubmitPrediction();
   const { standings } = useStandings();
+  const { config } = useConfig();
   const { isAdmin } = useAuth();
   const [currentGroup, setCurrentGroup] = useState('A');
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -38,10 +39,10 @@ export function HomePage() {
     return matches.filter((m: any) => m.group === currentGroup);
   }, [matches, currentGroup]);
 
-  const groupIsLocked = useMemo(
-    () => filteredMatches.some((m: any) => m.is_locked),
-    [filteredMatches]
-  );
+  const groupIsLocked = useMemo(() => {
+    if (!config?.qualifier_lock_at) return false;
+    return Date.now() >= new Date(config.qualifier_lock_at).getTime();
+  }, [config]);
 
   const teamsInGroup = useMemo(() => {
     const map = new Map<string, string>();
