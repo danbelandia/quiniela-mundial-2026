@@ -65,3 +65,14 @@ type QualifierPredictionView struct {
 	PointsEarned       int    `json:"points_earned"`
 	GroupClosed        bool   `json:"group_closed"`
 }
+
+type TopScorerRepository interface {
+	UpsertTopScorerPrediction(userID int, player string) error
+	GetTopScorerPredictionByUserID(userID int) (*domain.TopScorerPrediction, error)
+	GetAllTopScorerPredictions() ([]domain.TopScorerPrediction, error)
+}
+
+type AppConfigRepository interface {
+	GetAppConfig(key string) (string, error)
+	SetAppConfig(key, value string) error
+}

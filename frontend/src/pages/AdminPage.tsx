@@ -1,14 +1,17 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useMatches } from '../features/hooks';
+import { useMatches, useConfig } from '../features/hooks';
 import { apiClient } from '../shared/api/apiClient';
 
 export function AdminPage() {
   const { matches, loading, refresh } = useMatches();
+  const { config } = useConfig();
   const [scores, setScores] = useState<{ [key: number]: { home: number; away: number } }>({});
   const [users, setUsers] = useState<any[]>([]);
   const [editingUserId, setEditingUserId] = useState<number | null>(null);
   const [editUserForm, setEditUserForm] = useState<{ username: string, email: string, is_admin: boolean }>({ username: '', email: '', is_admin: false });
   const [currentGroup, setCurrentGroup] = useState('A');
+  const [topScorerPick, setTopScorerPick] = useState('');
+  const [topScorerCustom, setTopScorerCustom] = useState('');
 
   useEffect(() => {
     apiClient.get('/ranking').then(setUsers);
@@ -67,6 +70,24 @@ export function AdminPage() {
       setEditingUserId(null);
     } catch (error) {
       alert('Error al actualizar usuario');
+    }
+  };
+
+  const handleSetTopScorer = async () => {
+    const player = topScorerCustom.trim() || topScorerPick;
+    if (!player) {
+      alert('Elegí un jugador de la lista o escribí uno personalizado');
+      return;
+    }
+    if (topScorerCustom.trim()) {
+      if (!confirm(`"${player}" no está en la lista de candidatos. ¿Guardarlo igual?`)) return;
+    }
+    try {
+      await apiClient.post('/admin/top-scorer', { player });
+      alert('Goleador guardado');
+      setTopScorerCustom('');
+    } catch (error) {
+      alert('Error al guardar');
     }
   };
 
@@ -137,7 +158,35 @@ export function AdminPage() {
         </div>
       </div>
 
-      <h2 className="text-xl font-bold mb-4 text-tm-blue">Gestionar Usuarios</h2>
+      <h2 className="text-xl font-bold mb-4 text-tm-blue mt-10">Goleador de la fase de grupos</h2>
+      <p className="text-sm text-gray-600 mb-3">
+        Al finalizar la fase de grupos, elegí el jugador que más goles haya hecho. Quien acertó suma 6 puntos.
+      </p>
+      <div className="flex flex-col md:flex-row gap-3 mb-6 items-start md:items-center">
+        <select
+          value={topScorerPick}
+          onChange={e => setTopScorerPick(e.target.value)}
+          className="border border-gray-300 rounded p-2 md:w-96"
+        >
+          <option value="">— De la lista de candidatos —</option>
+          {(config?.top_scorer_candidates || []).map((c: any) => (
+            <option key={c.name} value={c.name}>{c.flag} {c.name} ({c.team})</option>
+          ))}
+        </select>
+        <span className="text-sm text-gray-500">o</span>
+        <input
+          type="text"
+          placeholder="Nombre personalizado (no está en la lista)"
+          value={topScorerCustom}
+          onChange={e => setTopScorerCustom(e.target.value)}
+          className="border border-gray-300 rounded p-2 md:w-96"
+        />
+        <button onClick={handleSetTopScorer} className="bg-tm-blue text-white px-4 py-2 rounded font-bold hover:bg-blue-900">
+          Guardar resultado
+        </button>
+      </div>
+
+      <h2 className="text-xl font-bold mb-4 text-tm-blue mt-10">Gestionar Usuarios</h2>
       <table className="w-full text-left">
         <thead>
           <tr className="bg-gray-100 text-tm-blue uppercase text-sm">

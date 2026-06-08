@@ -1,13 +1,16 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 	"quiniela-backend/internal/application/services"
+	"quiniela-backend/internal/core/domain"
 	"quiniela-backend/internal/infrastructure/handlers"
 	"quiniela-backend/internal/infrastructure/repository"
 )
@@ -16,6 +19,7 @@ func main() {
 	driverName, connStr := buildDBConfig()
 	lockWindow := buildLockWindow()
 	qualifierLockAt := buildQualifierLockAt()
+	candidates := loadTopScorerCandidates()
 
 	repo, err := repository.NewSQLiteRepository(driverName, connStr, lockWindow)
 	if err != nil {
@@ -29,6 +33,7 @@ func main() {
 	userService := services.NewUserService(repo, repo)
 	standingsService := services.NewStandingsService(repo)
 	qualifierService := services.NewQualifierPredictionService(repo, repo, lockWindow, qualifierLockAt)
+	topScorerService := services.NewTopScorerService(repo, repo, qualifierLockAt, candidates)
 
 	matchHandler := &handlers.MatchHandler{Service: matchService}
 	predictionHandler := &handlers.PredictionHandler{Service: predictionService}
@@ -38,6 +43,7 @@ func main() {
 		MatchRepo:        repo,
 		PredRepo:         repo,
 		QualifierService: qualifierService,
+		TopScorerService: topScorerService,
 	}
 	userHandler := &handlers.UserHandler{Service: userService}
 	adminHandler := &handlers.AdminHandler{MatchService: matchService}
@@ -47,9 +53,12 @@ func main() {
 		UserService: userService,
 		MatchRepo:   repo,
 	}
+	topScorerHandler := &handlers.TopScorerHandler{Service: topScorerService}
+	topScorerAdminHandler := &handlers.TopScorerAdminHandler{Service: topScorerService}
 	configHandler := &handlers.ConfigHandler{
-		QualifierLockAt:  qualifierLockAt,
-		MatchLockWindow:  lockWindow,
+		QualifierLockAt:     qualifierLockAt,
+		MatchLockWindow:     lockWindow,
+		TopScorerCandidates: candidates,
 	}
 
 	mux := http.NewServeMux()
@@ -82,9 +91,13 @@ func main() {
 	mux.HandleFunc("OPTIONS /admin/users/{id}", handlers.HandleOptions)
 	mux.HandleFunc("POST /admin/users/update", userHandler.UpdateUser)
 	mux.HandleFunc("OPTIONS /admin/users/update", handlers.HandleOptions)
+	mux.HandleFunc("POST /admin/top-scorer", topScorerAdminHandler.SetActual)
+	mux.HandleFunc("OPTIONS /admin/top-scorer", handlers.HandleOptions)
 
 	mux.HandleFunc("GET /users/{id}/predictions", userHandler.GetUserPredictions)
 	mux.HandleFunc("OPTIONS /users/{id}/predictions", handlers.HandleOptions)
+	mux.HandleFunc("GET /users/{id}/top-scorer-prediction", topScorerHandler.GetByUserID)
+	mux.HandleFunc("OPTIONS /users/{id}/top-scorer-prediction", handlers.HandleOptions)
 
 	mux.HandleFunc("GET /standings", standingsHandler.GetAll)
 	mux.HandleFunc("OPTIONS /standings", handlers.HandleOptions)
@@ -95,6 +108,11 @@ func main() {
 	mux.HandleFunc("OPTIONS /groups/{group}/qualifier-predictions/me", handlers.HandleOptions)
 	mux.HandleFunc("PUT /groups/{group}/qualifier-predictions", qualifierHandler.Upsert)
 	mux.HandleFunc("OPTIONS /groups/{group}/qualifier-predictions", handlers.HandleOptions)
+
+	mux.HandleFunc("GET /top-scorer-prediction/me", topScorerHandler.GetMine)
+	mux.HandleFunc("OPTIONS /top-scorer-prediction/me", handlers.HandleOptions)
+	mux.HandleFunc("PUT /top-scorer-prediction/me", topScorerHandler.UpsertMine)
+	mux.HandleFunc("OPTIONS /top-scorer-prediction", handlers.HandleOptions)
 
 	log.Println("Server starting on :8080...")
 	if err := http.ListenAndServe(":8080", mux); err != nil {
@@ -152,4 +170,43 @@ func buildQualifierLockAt() time.Time {
 	}
 	log.Printf("qualifier lock deadline configured: %s", t.UTC().Format(time.RFC3339))
 	return t.UTC()
+}
+
+func loadTopScorerCandidates() []domain.TopScorerCandidate {
+	candidates, path := tryLoadCandidates(os.Getenv("TOP_SCORER_CANDIDATES_PATH"))
+	if candidates != nil {
+		log.Printf("loaded %d top scorer candidates from %s", len(candidates), path)
+		return candidates
+	}
+	exe, _ := os.Executable()
+	exeDir := filepath.Dir(exe)
+	candidates, path = tryLoadCandidates(filepath.Join(exeDir, "data", "top_scorer_candidates.json"))
+	if candidates != nil {
+		log.Printf("loaded %d top scorer candidates from %s (exe dir)", len(candidates), path)
+		return candidates
+	}
+	if cwd, err := os.Getwd(); err == nil {
+		candidates, path = tryLoadCandidates(filepath.Join(cwd, "data", "top_scorer_candidates.json"))
+		if candidates != nil {
+			log.Printf("loaded %d top scorer candidates from %s (cwd)", len(candidates), path)
+			return candidates
+		}
+	}
+	log.Printf("warn: top scorer candidates file not found, using empty list")
+	return []domain.TopScorerCandidate{}
+}
+
+func tryLoadCandidates(path string) ([]domain.TopScorerCandidate, string) {
+	if path == "" {
+		return nil, ""
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, path
+	}
+	var candidates []domain.TopScorerCandidate
+	if err := json.Unmarshal(data, &candidates); err != nil {
+		return nil, path
+	}
+	return candidates, path
 }

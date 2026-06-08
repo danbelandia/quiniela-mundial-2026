@@ -5,6 +5,7 @@ import { UserPredictionsPage } from '../pages/UserPredictionsPage';
 import { RegisterPage } from '../pages/RegisterPage';
 import { AdminPage } from '../pages/AdminPage';
 import { LoginPage } from '../pages/LoginPage';
+import { GoleadorPage } from '../pages/GoleadorPage';
 import { ProtectedRoute } from '../shared/ProtectedRoute';
 import { AdminRoute } from '../shared/AdminRoute';
 import { AuthProvider, useAuth } from '../shared/AuthContext';
@@ -26,6 +27,7 @@ function Navbar() {
           <Link to="/ranking" className="font-bold hover:text-gray-300">Ranking</Link>
           {isLoggedIn ? (
               <>
+                  <Link to="/goleador" className="font-bold hover:text-gray-300">Goleador</Link>
                   {isAdmin && <Link to="/admin" className="font-bold hover:text-gray-300">Admin</Link>}
               </>
           ) : (
@@ -57,6 +59,7 @@ export function App() {
               <Route element={<ProtectedRoute />}>
                   <Route path="/" element={<HomePage />} />
                   <Route path="/ranking" element={<RankingPage />} />
+                  <Route path="/goleador" element={<GoleadorPage />} />
                   <Route path="/user/:id" element={<UserPredictionsPage />} />
 
                   <Route element={<AdminRoute />}>

@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { apiClient } from '../shared/api/apiClient';
-import { useQualifierPredictionsByUser } from '../features/hooks';
+import { useQualifierPredictionsByUser, useConfig, useUserTopScorerPrediction } from '../features/hooks';
 import { QualifierPredictionCard, QualifierPredictionView } from '../components/QualifierPredictionCard';
+import { TopScorerPredictionCard } from '../components/TopScorerPredictionCard';
 
 interface PredictionWithMatch {
   group_name: string;
@@ -74,6 +75,13 @@ export function UserPredictionsPage() {
   }, [qualifierViews]);
   const activeQualifierView = activeGroup ? viewsByGroup.get(activeGroup) : undefined;
 
+  const { config } = useConfig();
+  const { prediction: topScorerPred } = useUserTopScorerPrediction(Number(id));
+  const topScorerCandidate = useMemo(() => {
+    if (!config?.top_scorer_candidates || !topScorerPred) return null;
+    return config.top_scorer_candidates.find(c => c.name === topScorerPred.predicted_player) || null;
+  }, [config, topScorerPred]);
+
   if (error) {
     return (
       <div className="bg-white p-6 rounded-lg shadow-sm">
@@ -123,6 +131,9 @@ export function UserPredictionsPage() {
           </div>
 
           <div className="overflow-x-auto -mx-6 px-6">
+            <div className="mb-4">
+              <TopScorerPredictionCard candidate={topScorerCandidate} actualPlayer={null} points={6} />
+            </div>
             {activeQualifierView && <QualifierPredictionCard view={activeQualifierView} />}
             <table className="w-full text-left min-w-[480px]">
               <thead>

@@ -24,7 +24,7 @@ export function RankingPage() {
     apiClient.get('/ranking').then(data => {
       const enriched = data.map((u: any) => ({
         ...u,
-        total: (u.score || 0) + (u.qualifier_score || 0),
+        total: (u.score || 0) + (u.qualifier_score || 0) + (u.top_scorer_score || 0),
       }));
       const sorted = enriched.sort((a: any, b: any) => b.total - a.total);
       setUsers(sorted);
@@ -52,6 +52,7 @@ export function RankingPage() {
               <th className="p-2 md:p-3">Usuario</th>
               <th className="p-2 md:p-3 text-center">Partidos</th>
               <th className="p-2 md:p-3 text-center">Clasificación</th>
+              <th className="p-2 md:p-3 text-center">Goleador</th>
               <th className="p-2 md:p-3">Total</th>
             </tr>
           </thead>
@@ -70,6 +71,7 @@ export function RankingPage() {
                   </td>
                   <td className="p-2 md:p-3 text-center whitespace-nowrap">{u.score || 0}</td>
                   <td className="p-2 md:p-3 text-center whitespace-nowrap">{u.qualifier_score || 0}</td>
+                  <td className="p-2 md:p-3 text-center whitespace-nowrap">{u.top_scorer_score || 0}</td>
                   <td className="p-2 md:p-3 font-bold text-tm-blue whitespace-nowrap">{u.total}</td>
                 </tr>
               );

@@ -177,6 +177,21 @@ export function useQualifierPredictionsByUser(userId: number) {
 export interface AppConfig {
   qualifier_lock_at: string;
   match_lock_window_hours: number;
+  top_scorer_candidates: TopScorerCandidate[];
+}
+
+export interface TopScorerCandidate {
+  name: string;
+  team: string;
+  flag: string;
+}
+
+export interface TopScorerPrediction {
+  id: number;
+  user_id: number;
+  predicted_player: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export function useConfig() {
@@ -198,4 +213,54 @@ export function useConfig() {
   }, []);
 
   return { config, loading };
+}
+
+export function useMyTopScorerPrediction(userId: number) {
+  const [prediction, setPrediction] = useState<TopScorerPrediction | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const load = () => {
+    if (!userId) return;
+    setLoading(true);
+    fetch(`${(apiClient as any).BASE_URL}/top-scorer-prediction/me?user_id=${userId}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => setPrediction(data || null))
+      .catch(() => setPrediction(null))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => { load(); }, [userId]);
+
+  return { prediction, loading, refresh: load };
+}
+
+export function useUpsertTopScorerPrediction() {
+  const upsert = async (userId: number, predictedPlayer: string) => {
+    const r = await apiClient.rawFetch('/top-scorer-prediction/me', {
+      method: 'PUT',
+      body: JSON.stringify({ user_id: userId, predicted_player: predictedPlayer }),
+    });
+    if (!r.ok) {
+      const text = await r.text();
+      throw new Error(text || `Error ${r.status}`);
+    }
+    return r.json();
+  };
+  return { upsert };
+}
+
+export function useUserTopScorerPrediction(userId: number) {
+  const [prediction, setPrediction] = useState<TopScorerPrediction | null>(null);
+
+  useEffect(() => {
+    if (!userId) return;
+    const ctrl = new AbortController();
+    fetch(`${(apiClient as any).BASE_URL}/users/${userId}/top-scorer-prediction`, { signal: ctrl.signal })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => setPrediction(data || null))
+      .catch(err => { if (err.name !== 'AbortError') setPrediction(null); });
+    return () => ctrl.abort();
+  }, [userId]);
+
+  return { prediction };
 }

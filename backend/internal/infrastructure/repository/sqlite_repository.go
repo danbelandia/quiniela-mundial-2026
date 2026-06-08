@@ -81,6 +81,19 @@ func (r *SQLiteRepository) Migrate() error {
 		UNIQUE(user_id, group_name),
 		FOREIGN KEY(user_id) REFERENCES users(id)
 	);
+	CREATE TABLE IF NOT EXISTS top_scorer_predictions (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		user_id INTEGER NOT NULL UNIQUE,
+		predicted_player TEXT NOT NULL,
+		created_at DATETIME NOT NULL,
+		updated_at DATETIME NOT NULL,
+		FOREIGN KEY(user_id) REFERENCES users(id)
+	);
+	CREATE TABLE IF NOT EXISTS app_config (
+		key TEXT PRIMARY KEY,
+		value TEXT NOT NULL,
+		updated_at DATETIME NOT NULL
+	);
 	CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email);`
 	_, err := r.DB.Exec(query)
 	return err
@@ -481,4 +494,78 @@ func (r *SQLiteRepository) GetAllQualifierPredictions() ([]domain.QualifierPredi
 		preds = append(preds, p)
 	}
 	return preds, nil
+}
+
+func (r *SQLiteRepository) UpsertTopScorerPrediction(userID int, player string) error {
+	now := r.clock().UTC().Format("2006-01-02 15:04:05.999999")
+	_, err := r.DB.Exec(`
+		INSERT INTO top_scorer_predictions (user_id, predicted_player, created_at, updated_at)
+		VALUES (?, ?, ?, ?)
+		ON CONFLICT(user_id) DO UPDATE SET
+			predicted_player = excluded.predicted_player,
+			updated_at = excluded.updated_at`,
+		userID, player, now, now)
+	return err
+}
+
+func (r *SQLiteRepository) GetTopScorerPredictionByUserID(userID int) (*domain.TopScorerPrediction, error) {
+	row := r.DB.QueryRow(`
+		SELECT id, user_id, predicted_player, created_at, updated_at
+		FROM top_scorer_predictions WHERE user_id = ?`, userID)
+	var p domain.TopScorerPrediction
+	var createdAtStr, updatedAtStr string
+	err := row.Scan(&p.ID, &p.UserID, &p.PredictedPlayer, &createdAtStr, &updatedAtStr)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	p.CreatedAt = parseMatchDate(createdAtStr)
+	p.UpdatedAt = parseMatchDate(updatedAtStr)
+	return &p, nil
+}
+
+func (r *SQLiteRepository) GetAllTopScorerPredictions() ([]domain.TopScorerPrediction, error) {
+	rows, err := r.DB.Query(`
+		SELECT id, user_id, predicted_player, created_at, updated_at
+		FROM top_scorer_predictions`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var preds []domain.TopScorerPrediction
+	for rows.Next() {
+		var p domain.TopScorerPrediction
+		var createdAtStr, updatedAtStr string
+		if err := rows.Scan(&p.ID, &p.UserID, &p.PredictedPlayer, &createdAtStr, &updatedAtStr); err != nil {
+			return nil, err
+		}
+		p.CreatedAt = parseMatchDate(createdAtStr)
+		p.UpdatedAt = parseMatchDate(updatedAtStr)
+		preds = append(preds, p)
+	}
+	return preds, nil
+}
+
+func (r *SQLiteRepository) GetAppConfig(key string) (string, error) {
+	var value string
+	err := r.DB.QueryRow("SELECT value FROM app_config WHERE key = ?", key).Scan(&value)
+	if err == sql.ErrNoRows {
+		return "", nil
+	}
+	return value, err
+}
+
+func (r *SQLiteRepository) SetAppConfig(key, value string) error {
+	now := r.clock().UTC().Format("2006-01-02 15:04:05.999999")
+	_, err := r.DB.Exec(`
+		INSERT INTO app_config (key, value, updated_at)
+		VALUES (?, ?, ?)
+		ON CONFLICT(key) DO UPDATE SET
+			value = excluded.value,
+			updated_at = excluded.updated_at`,
+		key, value, now)
+	return err
 }

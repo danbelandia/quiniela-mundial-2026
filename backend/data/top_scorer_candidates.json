@@ -1,0 +1,82 @@
+[
+  { "name": "Kylian Mbappé", "team": "Francia", "flag": "🇫🇷" },
+  { "name": "Ousmane Dembélé", "team": "Francia", "flag": "🇫🇷" },
+  { "name": "Michael Olise", "team": "Francia", "flag": "🇫🇷" },
+
+  { "name": "Harry Kane", "team": "Inglaterra", "flag": "🏴" },
+  { "name": "Bukayo Saka", "team": "Inglaterra", "flag": "🏴" },
+  { "name": "Cole Palmer", "team": "Inglaterra", "flag": "🏴" },
+
+  { "name": "Lautaro Martínez", "team": "Argentina", "flag": "🇦🇷" },
+  { "name": "Julián Álvarez", "team": "Argentina", "flag": "🇦🇷" },
+  { "name": "Lionel Messi", "team": "Argentina", "flag": "🇦🇷" },
+
+  { "name": "Vinícius Júnior", "team": "Brasil", "flag": "🇧🇷" },
+  { "name": "Raphinha", "team": "Brasil", "flag": "🇧🇷" },
+  { "name": "Rodrygo", "team": "Brasil", "flag": "🇧🇷" },
+  { "name": "Endrick", "team": "Brasil", "flag": "🇧🇷" },
+
+  { "name": "Lamine Yamal", "team": "España", "flag": "🇪🇸" },
+  { "name": "Mikel Oyarzabal", "team": "España", "flag": "🇪🇸" },
+  { "name": "Nico Williams", "team": "España", "flag": "🇪🇸" },
+
+  { "name": "Cristiano Ronaldo", "team": "Portugal", "flag": "🇵🇹" },
+  { "name": "Rafael Leão", "team": "Portugal", "flag": "🇵🇹" },
+  { "name": "Gonçalo Ramos", "team": "Portugal", "flag": "🇵🇹" },
+
+  { "name": "Erling Haaland", "team": "Noruega", "flag": "🇳🇴" },
+  { "name": "Alexander Sørloth", "team": "Noruega", "flag": "🇳🇴" },
+
+  { "name": "Cody Gakpo", "team": "Países Bajos", "flag": "🇳🇱" },
+  { "name": "Memphis Depay", "team": "Países Bajos", "flag": "🇳🇱" },
+
+  { "name": "Romelu Lukaku", "team": "Bélgica", "flag": "🇧🇪" },
+  { "name": "Jérémy Doku", "team": "Bélgica", "flag": "🇧🇪" },
+
+  { "name": "Victor Osimhen", "team": "Nigeria", "flag": "🇳🇬" },
+  { "name": "Ademola Lookman", "team": "Nigeria", "flag": "🇳🇬" },
+
+  { "name": "Mohamed Salah", "team": "Egipto", "flag": "🇪🇬" },
+
+  { "name": "Alexander Isak", "team": "Suecia", "flag": "🇸🇪" },
+  { "name": "Viktor Gyökeres", "team": "Suecia", "flag": "🇸🇪" },
+
+  { "name": "Jonathan David", "team": "Canadá", "flag": "🇨🇦" },
+
+  { "name": "Luis Díaz", "team": "Colombia", "flag": "🇨🇴" },
+  { "name": "Jhon Durán", "team": "Colombia", "flag": "🇨🇴" },
+
+  { "name": "Raúl Jiménez", "team": "México", "flag": "🇲🇽" },
+  { "name": "Santiago Giménez", "team": "México", "flag": "🇲🇽" },
+
+  { "name": "Christian Pulisic", "team": "Estados Unidos", "flag": "🇺🇸" },
+  { "name": "Folarin Balogun", "team": "Estados Unidos", "flag": "🇺🇸" },
+
+  { "name": "Son Heung-min", "team": "Corea del Sur", "flag": "🇰🇷" },
+
+  { "name": "Ayase Ueda", "team": "Japón", "flag": "🇯🇵" },
+  { "name": "Kaoru Mitoma", "team": "Japón", "flag": "🇯🇵" },
+
+  { "name": "Youssef En-Nesyri", "team": "Marruecos", "flag": "🇲🇦" },
+
+  { "name": "Dušan Vlahović", "team": "Serbia", "flag": "🇷🇸" },
+  { "name": "Aleksandar Mitrović", "team": "Serbia", "flag": "🇷🇸" },
+
+  { "name": "Ante Budimir", "team": "Croacia", "flag": "🇭🇷" },
+
+  { "name": "Breel Embolo", "team": "Suiza", "flag": "🇨🇭" },
+  { "name": "Zeki Amdouni", "team": "Suiza", "flag": "🇨🇭" },
+
+  { "name": "Sardar Azmoun", "team": "Irán", "flag": "🇮🇷" },
+
+  { "name": "Akram Afif", "team": "Qatar", "flag": "🇶🇦" },
+  { "name": "Almoez Ali", "team": "Qatar", "flag": "🇶🇦" },
+
+  { "name": "Salem Al-Dawsari", "team": "Arabia Saudita", "flag": "🇸🇦" },
+
+  { "name": "Antoine Semenyo", "team": "Ghana", "flag": "🇬🇭" },
+
+  { "name": "Karim Konaté", "team": "Costa de Marfil", "flag": "🇨🇮" },
+
+  { "name": "Denis Bouanga", "team": "Gabón", "flag": "🇬🇦" }
+]

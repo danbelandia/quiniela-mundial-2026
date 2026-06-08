@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"log"
 	"strings"
 	"time"
 	"quiniela-backend/internal/core/domain"
@@ -9,6 +10,7 @@ import (
 )
 
 var ErrMatchLocked = errors.New("match is locked")
+var ErrInvalidPlayer = errors.New("player not in candidate list")
 
 // MatchService
 type MatchService struct {
@@ -278,4 +280,68 @@ func (s *QualifierPredictionService) GetViewsForUser(userID int) ([]ports.Qualif
 		views = append(views, v)
 	}
 	return views, nil
+}
+
+// TopScorerService
+type TopScorerService struct {
+	userRepo        ports.TopScorerRepository
+	cfgRepo         ports.AppConfigRepository
+	qualifierLockAt time.Time
+	candidates      []domain.TopScorerCandidate
+}
+
+func NewTopScorerService(userRepo ports.TopScorerRepository, cfgRepo ports.AppConfigRepository, qualifierLockAt time.Time, candidates []domain.TopScorerCandidate) *TopScorerService {
+	return &TopScorerService{userRepo: userRepo, cfgRepo: cfgRepo, qualifierLockAt: qualifierLockAt, candidates: candidates}
+}
+
+func (s *TopScorerService) isValidCandidate(player string) bool {
+	for _, c := range s.candidates {
+		if c.Name == player {
+			return true
+		}
+	}
+	return false
+}
+
+func (s *TopScorerService) Upsert(userID int, player string) error {
+	if !time.Now().UTC().Before(s.qualifierLockAt) {
+		return ErrMatchLocked
+	}
+	if !s.isValidCandidate(player) {
+		return ErrInvalidPlayer
+	}
+	return s.userRepo.UpsertTopScorerPrediction(userID, player)
+}
+
+func (s *TopScorerService) GetMine(userID int) (*domain.TopScorerPrediction, error) {
+	return s.userRepo.GetTopScorerPredictionByUserID(userID)
+}
+
+func (s *TopScorerService) GetByUserID(userID int) (*domain.TopScorerPrediction, error) {
+	return s.userRepo.GetTopScorerPredictionByUserID(userID)
+}
+
+func (s *TopScorerService) SetActual(player string) error {
+	if !s.isValidCandidate(player) {
+		log.Printf("warn: top scorer not in candidate list: %q", player)
+	}
+	return s.cfgRepo.SetAppConfig("top_scorer", player)
+}
+
+func (s *TopScorerService) ScoreUser(userID int) (int, error) {
+	actual, err := s.cfgRepo.GetAppConfig("top_scorer")
+	if err != nil {
+		return 0, err
+	}
+	if actual == "" {
+		return 0, nil
+	}
+	pred, err := s.userRepo.GetTopScorerPredictionByUserID(userID)
+	if err != nil {
+		return 0, err
+	}
+	if pred == nil {
+		return 0, nil
+	}
+	return domain.TopScorerPointsEarned(pred.PredictedPlayer, actual), nil
 }

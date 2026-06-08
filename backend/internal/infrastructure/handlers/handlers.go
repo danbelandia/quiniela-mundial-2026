@@ -80,11 +80,12 @@ func (h *PredictionHandler) GetPredictions(w http.ResponseWriter, r *http.Reques
 }
 
 type RankingHandler struct {
-	Service             *services.RankingService
-	UserService         *services.UserService
-	MatchRepo           ports.MatchRepository
-	PredRepo            ports.PredictionRepository
-	QualifierService    *services.QualifierPredictionService
+	Service           *services.RankingService
+	UserService       *services.UserService
+	MatchRepo         ports.MatchRepository
+	PredRepo          ports.PredictionRepository
+	QualifierService  *services.QualifierPredictionService
+	TopScorerService  *services.TopScorerService
 }
 
 func (h *RankingHandler) GetRanking(w http.ResponseWriter, r *http.Request) {
@@ -125,6 +126,15 @@ func (h *RankingHandler) GetRanking(w http.ResponseWriter, r *http.Request) {
 				users[i].QualifierScore = qScore
 			}
 		}
+
+		topScorerScore := 0
+		if h.TopScorerService != nil {
+			tsScore, tsErr := h.TopScorerService.ScoreUser(u.ID)
+			if tsErr == nil {
+				topScorerScore = tsScore
+			}
+		}
+		users[i].TopScorerScore = topScorerScore
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -464,15 +474,129 @@ func (h *QualifierPredictionHandler) Upsert(w http.ResponseWriter, r *http.Reque
 // ConfigHandler exposes global settings (lock deadlines, windows) so the
 // frontend can align its UI state with the server.
 type ConfigHandler struct {
-	QualifierLockAt time.Time
-	MatchLockWindow time.Duration
+	QualifierLockAt      time.Time
+	MatchLockWindow      time.Duration
+	TopScorerCandidates []domain.TopScorerCandidate
 }
 
 func (h *ConfigHandler) Get(w http.ResponseWriter, r *http.Request) {
 	SetCORS(w)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]any{
-		"qualifier_lock_at":      h.QualifierLockAt.UTC().Format(time.RFC3339),
+		"qualifier_lock_at":       h.QualifierLockAt.UTC().Format(time.RFC3339),
 		"match_lock_window_hours": h.MatchLockWindow.Hours(),
+		"top_scorer_candidates":   h.TopScorerCandidates,
 	})
+}
+
+// TopScorerHandler exposes the user's own top-scorer prediction.
+type TopScorerHandler struct {
+	Service *services.TopScorerService
+}
+
+func (h *TopScorerHandler) UpsertMine(w http.ResponseWriter, r *http.Request) {
+	SetCORS(w)
+	var body struct {
+		UserID          int    `json:"user_id"`
+		PredictedPlayer string `json:"predicted_player"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
+	if body.UserID == 0 || body.PredictedPlayer == "" {
+		http.Error(w, "user_id and predicted_player are required", http.StatusBadRequest)
+		return
+	}
+	if err := h.Service.Upsert(body.UserID, body.PredictedPlayer); err != nil {
+		switch {
+		case errors.Is(err, services.ErrMatchLocked):
+			http.Error(w, "match is locked", http.StatusForbidden)
+		case errors.Is(err, services.ErrInvalidPlayer):
+			http.Error(w, "player not in candidate list", http.StatusBadRequest)
+		default:
+			log.Printf("Error saving top scorer prediction: %v", err)
+			http.Error(w, "Failed to save", http.StatusInternalServerError)
+		}
+		return
+	}
+	saved, err := h.Service.GetMine(body.UserID)
+	if err != nil || saved == nil {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(saved)
+}
+
+func (h *TopScorerHandler) GetMine(w http.ResponseWriter, r *http.Request) {
+	SetCORS(w)
+	userIDStr := r.URL.Query().Get("user_id")
+	if userIDStr == "" {
+		http.Error(w, "user_id is required", http.StatusBadRequest)
+		return
+	}
+	userID, err := strconv.Atoi(userIDStr)
+	if err != nil {
+		http.Error(w, "invalid user_id", http.StatusBadRequest)
+		return
+	}
+	pred, err := h.Service.GetMine(userID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if pred == nil {
+		http.Error(w, "no prediction", http.StatusNotFound)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(pred)
+}
+
+func (h *TopScorerHandler) GetByUserID(w http.ResponseWriter, r *http.Request) {
+	SetCORS(w)
+	idStr := r.PathValue("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "invalid id", http.StatusBadRequest)
+		return
+	}
+	pred, err := h.Service.GetByUserID(id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if pred == nil {
+		http.Error(w, "no prediction", http.StatusNotFound)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(pred)
+}
+
+// TopScorerAdminHandler exposes the admin endpoint to set the actual top scorer.
+type TopScorerAdminHandler struct {
+	Service *services.TopScorerService
+}
+
+func (h *TopScorerAdminHandler) SetActual(w http.ResponseWriter, r *http.Request) {
+	SetCORS(w)
+	var body struct {
+		Player string `json:"player"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
+	if body.Player == "" {
+		http.Error(w, "player is required", http.StatusBadRequest)
+		return
+	}
+	if err := h.Service.SetActual(body.Player); err != nil {
+		log.Printf("Error setting top scorer: %v", err)
+		http.Error(w, "Failed to save", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
 }
