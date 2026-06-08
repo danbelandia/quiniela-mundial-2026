@@ -142,6 +142,10 @@ export function RankingPage() {
                 <td className="p-2 md:p-3">Acierto de 1° o 2° de grupo (cuando el grupo está cerrado)</td>
                 <td className="p-2 md:p-3 text-center font-bold text-tm-blue">3 c/u (máx 6 por grupo)</td>
               </tr>
+              <tr className="border-b">
+                <td className="p-2 md:p-3">Acierto de goleador de la fase de grupos</td>
+                <td className="p-2 md:p-3 text-center font-bold text-tm-blue">6</td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -150,6 +154,9 @@ export function RankingPage() {
         </p>
         <p className="text-xs text-gray-500 mt-1 italic">
           Los puntos de clasificación se otorgan solo cuando los 6 partidos del grupo finalizan. Los empates se resuelven con los criterios FIFA: puntos, diferencia de gol, goles a favor, head-to-head, y sorteo determinístico.
+        </p>
+        <p className="text-xs text-gray-500 mt-1 italic">
+          El pronóstico de goleador se elige de una lista fija de 53 candidatos y se cierra el 11/06 a las 14:00 CLT (1h antes del partido inicial). Si acertás sumás 6 puntos; el match contra el resultado real es case-insensitive e ignora acentos.
         </p>
       </div>
     </div>
