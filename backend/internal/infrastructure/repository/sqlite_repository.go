@@ -387,6 +387,12 @@ func (r *SQLiteRepository) Delete(id int) error {
 	}
 	defer tx.Rollback()
 
+	if _, err := tx.Exec("DELETE FROM group_qualifier_predictions WHERE user_id = ?", id); err != nil {
+		return err
+	}
+	if _, err := tx.Exec("DELETE FROM top_scorer_predictions WHERE user_id = ?", id); err != nil {
+		return err
+	}
 	if _, err := tx.Exec("DELETE FROM predictions WHERE user_id = ?", id); err != nil {
 		return err
 	}
