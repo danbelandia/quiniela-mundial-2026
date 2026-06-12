@@ -12,12 +12,17 @@ func (p *Prediction) PointsEarned(actualHome, actualAway int) int {
 	if p.HomeScore == actualHome && p.AwayScore == actualAway {
 		return 3
 	}
-	if p.HomeScore == p.AwayScore && actualHome == actualAway {
-		return 2
+	sign := func(a, b int) int {
+		switch {
+		case a > b:
+			return 1
+		case a < b:
+			return -1
+		default:
+			return 0
+		}
 	}
-	predHomeWin := p.HomeScore > p.AwayScore
-	actualHomeWin := actualHome > actualAway
-	if predHomeWin == actualHomeWin {
+	if sign(p.HomeScore, p.AwayScore) == sign(actualHome, actualAway) {
 		return 2
 	}
 	return 0
