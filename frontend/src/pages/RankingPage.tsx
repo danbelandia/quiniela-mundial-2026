@@ -50,9 +50,9 @@ export function RankingPage() {
             <tr className="bg-gray-100 text-tm-blue uppercase text-sm">
               <th className="p-2 md:p-3 w-12">Pos.</th>
               <th className="p-2 md:p-3">Usuario</th>
-              <th className="p-2 md:p-3 text-center">Ptos por Partidos</th>
-              <th className="p-2 md:p-3 text-center">Ptos por Clasificación</th>
-              <th className="p-2 md:p-3 text-center">Pts por Goleador</th>
+              <th className="p-2 md:p-3 text-center">Ptos.Partidos</th>
+              <th className="p-2 md:p-3 text-center">Ptos.Clasif</th>
+              <th className="p-2 md:p-3 text-center">Ptos.Goleador</th>
               <th className="p-2 md:p-3">Total</th>
             </tr>
           </thead>
