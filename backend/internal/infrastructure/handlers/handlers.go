@@ -110,15 +110,25 @@ func (h *RankingHandler) GetRanking(w http.ResponseWriter, r *http.Request) {
 
 	for i, u := range users {
 		score := 0
+		exactScore := 0
+		winnerScore := 0
 		for _, p := range preds {
 			if p.UserID == u.ID {
 				match, ok := matchMap[p.MatchID]
 				if ok && match.Status == "finished" {
-					score += h.Service.CalculatePoints(p, match.HomeScore, match.AwayScore)
+					pts := h.Service.CalculatePoints(p, match.HomeScore, match.AwayScore)
+					score += pts
+					if pts == 3 {
+						exactScore++
+					} else if pts == 2 {
+						winnerScore++
+					}
 				}
 			}
 		}
 		users[i].Score = score
+		users[i].ExactScore = exactScore
+		users[i].WinnerScore = winnerScore
 
 		if h.QualifierService != nil {
 			qScore, qErr := h.QualifierService.ScoreUser(u.ID)

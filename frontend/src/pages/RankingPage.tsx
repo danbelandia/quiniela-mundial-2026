@@ -26,7 +26,12 @@ export function RankingPage() {
         ...u,
         total: (u.score || 0) + (u.qualifier_score || 0) + (u.top_scorer_score || 0),
       }));
-      const sorted = enriched.sort((a: any, b: any) => b.total - a.total);
+      const sorted = enriched.sort((a: any, b: any) => {
+        if (b.total !== a.total) return b.total - a.total;
+        if ((b.exact_score || 0) !== (a.exact_score || 0)) return (b.exact_score || 0) - (a.exact_score || 0);
+        if ((b.winner_score || 0) !== (a.winner_score || 0)) return (b.winner_score || 0) - (a.winner_score || 0);
+        return a.id - b.id;
+      });
       setUsers(sorted);
     });
   }, []);
