@@ -8,5 +8,7 @@ type User struct {
 	Score          int    `json:"score"`
 	QualifierScore int    `json:"qualifier_score"`
 	TopScorerScore int    `json:"top_scorer_score"`
+	ExactScore     int    `json:"exact_score"`
+	WinnerScore    int    `json:"winner_score"`
 	IsAdmin        bool   `json:"is_admin"`
 }
